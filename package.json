@@ -1,0 +1,22 @@
+{
+  "name": "disblock-discord-bot",
+  "version": "0.0.1",
+  "description": "Discord Bot application for Disblock Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Disblock/Disblock-Discord-Bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Disblock/Disblock-Discord-Bot/issues"
+  },
+  "homepage": "https://github.com/Disblock/Disblock-Discord-Bot#readme",
+  "dependencies": {
+    "discord.js": "^13.6.0"
+  }
+}
