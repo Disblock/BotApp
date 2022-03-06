@@ -2,19 +2,19 @@
 /*############################################*/
 /* Homemade modules */
 /*############################################*/
-
+const init_logs = require('./modules/init_logs.js');//Show a message in logs files and console when starting
 
 
 /*############################################*/
 /* Imported modules */
 /*############################################*/
 const Discord = require('discord.js');
-
+const winston = require('winston');//Used to save logs
+require('winston-daily-rotate-file');//Daily rotating files
 
 /*############################################*/
 /* Discord Client creation */
 /*############################################*/
-
 const discordClient = new Discord.Client({
   shards: 'auto',
   restRequestTimeout: 1000,
