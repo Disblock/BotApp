@@ -47,10 +47,61 @@ const discordClient = new Discord.Client({
   }
 });
 
+/*############################################*/
+/* Morgan & winston modules ( Logging ) */
+/*############################################*/
 
+init_logs.initConsole();//Show a message in console when starting
+
+/* ##### MAIN LOGGER ##### */
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(winston.format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }), winston.format.json()),
+  //exitOnError: false,
+  transports: [
+    new winston.transports.DailyRotateFile({ filename: './logs/app/error-%DATE%.log', level: 'error', maxFiles:process.env.LOGS_MAX_FILES, maxSize:'1g' }),//Errors file ( Errors )
+    new winston.transports.DailyRotateFile({ filename: './logs/app/backend-%DATE%.log', maxFiles:process.env.LOGS_MAX_FILES, maxSize:'1g' })//Backend logs ( info, errors, debug, ...)
+  ]
+});
+
+//Debug mode
+if(process.env.DEBUG === 'true'){
+  logger.add(new winston.transports.DailyRotateFile({filename:'./logs/app/debug-%DATE%.log', level: 'debug', maxFiles:process.env.LOGS_MAX_FILES, maxSize:'1g'}))
+}
+
+init_logs.initLogger(logger);//Initialized here to avoid showing the message twice in console
+//logger.error('The server has started, logging errors here !');//Sending a message in error logs to show that we started
+
+//If not in production, data is also logged in console
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+
+    format: winston.format.combine(
+      winston.format.colorize({level:true}),
+      winston.format.timestamp({
+        format: 'YYYY-MM-DD HH:mm:ss'
+      }), winston.format.simple()),
+
+    level: (process.env.DEBUG === 'true' ? 'debug':'info')//Debug mode or normal errors ?
+  }));
+}
+
+/* ##### Actions logger ##### */
+const actionsLogger = winston.createLogger({
+  levels: {info:1,action:0},
+  level: 'info',
+  format: winston.format.simple(),
+  transports: [
+    new winston.transports.DailyRotateFile({ filename: './logs/actions/actions-%DATE%.log', maxFiles:process.env.LOGS_MAX_FILES, maxSize:'1g'}),//Access logs
+  ]
+});
+
+init_logs.initLogger(actionsLogger);//Initialized here to avoid showing the message twice in console
 
 /*############################################*/
 /* Starting the bot */
 /*############################################*/
 
-discordClient.login('OTAzMzI0NjM1MTA4NjM0NjU0.YXrUnw.h15i_YmNlT2X-pl3plEgTJA-Bxs').then(()=>{console.log('Bot prêt !');});
+discordClient.login(process.env.TOKEN).then(()=>{logger.info("The Disblock's bot is ready !")});
