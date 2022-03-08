@@ -101,6 +101,113 @@ const actionsLogger = winston.createLogger({
 init_logs.initLogger(actionsLogger);//Initialized here to avoid showing the message twice in console
 
 /*############################################*/
+/* Adding events */
+/*############################################*/
+//Functions args have the same name than the var created in Blockly generator
+
+
+//A message is sent
+discordClient.on("messageCreate", async (eventMessage) =>{
+
+});
+
+//A message is deleted
+discordClient.on("messageDelete", async (eventMessage) =>{
+
+});
+
+//A message is updated
+discordClient.on("messageUpdate", async (eventOldMessage, eventNewMessage) =>{
+
+});
+
+//An user join a guild
+discordClient.on("guildMemberAdd", async (eventUser) =>{
+
+});
+
+//An user left a guild
+discordClient.on("guildMemberRemove", async (eventUser) =>{
+
+});
+
+//A guild member is updated ( ranks, pseudo, ... )
+discordClient.on("guildMemberUpdate", async (eventOldUser, eventNewUser) =>{
+
+});
+
+//A channel is created
+discordClient.on("channelCreate", async (channel) =>{
+  //TODO : check type of channel and set right var name
+  //eventVoiceChannel, eventTextChannel, eventThreadChannel
+});
+
+//A channel is deleted
+discordClient.on("channelDelete", async (channel) =>{
+  //TODO : check type of channel and set right var name
+  //eventVoiceChannel, eventTextChannel, eventThreadChannel
+});
+
+//A channel is updated
+discordClient.on("channelUpdate", async (oldChannel, newChannel) =>{
+  //TODO : check type of channel and set right var name
+  //eventOldVoiceChannel, eventNewVoiceChannel
+  //eventOldTextChannel, eventNewTextChannel
+  //eventNewThreadChannel, eventNewThreadChannel
+});
+
+//A rank is created
+discordClient.on("roleCreate", async (eventRole) =>{
+
+});
+
+//A rank is deleted
+discordClient.on("roleDelete", async (eventRole) =>{
+
+});
+
+//A rank is edited
+discordClient.on("roleUpdate", async (eventOldRole, eventNewRole) =>{
+
+});
+
+//An user is banned from the guild
+discordClient.on("guildBanAdd", async (eventBan) =>{
+  const eventUser = eventBan.user;//TODO : Check that, that's not an GuildMember
+});
+
+//An user is unbanned from the guild
+discordClient.on("guildBanRemove", async (eventBan) =>{
+  const eventUser = eventBan.user;//TODO : Check that, that's not an GuildMember
+});
+
+//A reaction is added
+discordClient.on("messageReactionAdd", async (eventMessageReaction, eventUser) =>{
+  //TODO : check types https://discord.js.org/#/docs/discord.js/stable/class/Client?scrollTo=e-messageReactionAdd
+});
+
+//A reaction is removed
+discordClient.on("messageReactionRemove", async (eventMessageReaction, eventUser) =>{
+//TODO : check types https://discord.js.org/#/docs/discord.js/stable/class/Client?scrollTo=e-messageReactionAdd
+});
+
+//A guild member join, leave or move from a voice channel
+discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
+
+});
+
+//A message is pined / unpined
+discordClient.on("channelPinsUpdate", async (message) =>{
+//TODO : https://discord.js.org/#/docs/discord.js/stable/class/Client?scrollTo=e-channelPinsUpdate
+//GLHF
+});
+
+//A guildMember is typing
+discordClient.on("typingStart", async (typingState) =>{
+//TODO : https://discord.js.org/#/docs/discord.js/stable/class/Typing
+});
+
+/*############################################*/
 /* Starting the bot */
 /*############################################*/
 
