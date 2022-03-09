@@ -9,6 +9,7 @@ const init_logs = require('./modules/init_logs.js');//Show a message in logs fil
 /* Imported modules */
 /*############################################*/
 const Discord = require('discord.js');
+const pg = require('pg');//Postgresql
 const winston = require('winston');//Used to save logs
 require('winston-daily-rotate-file');//Daily rotating files
 
@@ -99,6 +100,21 @@ const actionsLogger = winston.createLogger({
 });
 
 init_logs.initLogger(actionsLogger);//Initialized here to avoid showing the message twice in console
+
+/*############################################*/
+/* Database database_pool */
+/*############################################*/
+
+//database_pool to the database
+const database_pool = new pg.Pool();//Credentials are given by env var
+database_pool.query('SELECT NOW();', (err, res) => {
+      if(err instanceof Error){
+        logger.error("Can't connect to the Database when starting !");
+        throw(err);
+      }else{
+        logger.debug("Successfully connected to the Database !");
+      }
+});
 
 /*############################################*/
 /* Adding events */
