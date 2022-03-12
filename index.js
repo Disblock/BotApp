@@ -124,7 +124,27 @@ database_pool.query('SELECT NOW();', (err, res) => {
 
 //A message is sent
 discordClient.on("messageCreate", async (eventMessage) =>{
+  if(eventMessage.author.bot){return;}
+  const CURRENT_GUILD = eventMessage.guild;
+  let sentMessage;
 
+  logger.debug("A message was sent on server "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool
+  .query("SELECT code FROM server_code WHERE server_id = $1 AND action_type  = 'event_message_sent' AND active = TRUE;", [CURRENT_GUILD.id])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id);
+
+    for(let i=0; i<res.rows.length; i++){
+      console.log(res.rows[i]);
+      eval("async function f(){"+res.rows[i].code+"};f();");//Massive security threat
+    }
+
+  })
+  .catch(err =>{
+    logger.error("Error while getting or executing code for "+CURRENT_GUILD.id+" : "+err);
+  });
 });
 
 //A message is deleted
