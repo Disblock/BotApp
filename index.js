@@ -126,7 +126,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
 discordClient.on("messageCreate", async (eventMessage) =>{
   if(eventMessage.author.bot){return;}
   const CURRENT_GUILD = eventMessage.guild;
-  let sentMessage;
+  let sentMessage;//TODO : add variables
 
   logger.debug("A message was sent on server "+CURRENT_GUILD.id+", creating a SQL request...");
 
@@ -137,7 +137,6 @@ discordClient.on("messageCreate", async (eventMessage) =>{
     logger.debug("Got SQL result for "+CURRENT_GUILD.id);
 
     for(let i=0; i<res.rows.length; i++){
-      console.log(res.rows[i]);
       eval("async function f(){"+res.rows[i].code+"};f();");//Massive security threat
     }
 
