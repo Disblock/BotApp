@@ -121,12 +121,13 @@ database_pool.query('SELECT NOW();', (err, res) => {
 /*############################################*/
 //Functions args have the same name than the var created in Blockly generator
 
+//Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly )
+const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;";
 
 //A message is sent
 discordClient.on("messageCreate", async (eventMessage) =>{
   if(eventMessage.author.bot){return;}
   const CURRENT_GUILD = eventMessage.guild;
-  let sentMessage;//TODO : add variables
 
   logger.debug("A message was sent on server "+CURRENT_GUILD.id+", creating a SQL request...");
 
@@ -137,7 +138,7 @@ discordClient.on("messageCreate", async (eventMessage) =>{
     logger.debug("Got SQL result for "+CURRENT_GUILD.id);
 
     for(let i=0; i<res.rows.length; i++){
-      eval("async function f(){"+res.rows[i].code+"};f();");//Massive security threat
+      eval(globalVars+"async function f(){"+res.rows[i].code+"};f();");//Massive security threat
     }
 
   })
