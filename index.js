@@ -3,7 +3,7 @@
 /* Homemade modules */
 /*############################################*/
 const init_logs = require('./modules/init_logs.js');//Show a message in logs files and console when starting
-
+const getSandbox = require('./modules/init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
 
 /*############################################*/
 /* Imported modules */
@@ -11,6 +11,7 @@ const init_logs = require('./modules/init_logs.js');//Show a message in logs fil
 const Discord = require('discord.js');
 const pg = require('pg');//Postgresql
 const winston = require('winston');//Used to save logs
+const {NodeVM} = require('vm2');//Sandbox
 require('winston-daily-rotate-file');//Daily rotating files
 
 /*############################################*/
@@ -126,24 +127,32 @@ const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sent
 
 //A message is sent
 discordClient.on("messageCreate", async (eventMessage) =>{
-  if(eventMessage.author.bot){return;}
-  const CURRENT_GUILD = eventMessage.guild;
+  if(eventMessage.author.bot || eventMessage.channel.type == "DM"){return;}//Do nothing if a bot sent the message
+  const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
 
+  logger.info("Event triggred : A message was sent in guild "+CURRENT_GUILD.id);
   logger.debug("A message was sent on server "+CURRENT_GUILD.id+", creating a SQL request...");
 
-  database_pool
+  database_pool//Query to database to get code to execute
   .query("SELECT code FROM server_code WHERE server_id = $1 AND action_type  = 'event_message_sent' AND active = TRUE;", [CURRENT_GUILD.id])
   .then(async (res)=>{
 
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id);
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-    for(let i=0; i<res.rows.length; i++){
-      eval(globalVars+"async function f(){"+res.rows[i].code+"};f();");//Massive security threat
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
     }
 
   })
-  .catch(err =>{
+  .catch(err =>{//Got an error while getting data from database or while executing code
     logger.error("Error while getting or executing code for "+CURRENT_GUILD.id+" : "+err);
+    //Disabling code that may be responsible for that crash
+    //If the error came from the database connection, this request shouldn't work
+    database_pool.query("UPDATE server_code SET active = FALSE WHERE server_id = $1 AND action_type = 'event_message_sent';", [CURRENT_GUILD.id])
+    .catch(err => {
+      logger.error("Error while disabling code for "+CURRENT_GUILD.id+", we may have a database connection failure : "+err);//Error while disabling code
+    });
   });
 });
 
