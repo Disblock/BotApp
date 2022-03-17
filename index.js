@@ -122,19 +122,43 @@ database_pool.query('SELECT NOW();', (err, res) => {
 /*############################################*/
 //Functions args have the same name than the var created in Blockly generator
 
+//Function to handle errors in guilds code
+async function handleError(guildId, eventType, error){
+  if(guildId!=undefined && eventType!=undefined){
+
+    logger.error("Error while getting or executing code for "+guildId+", the code will be disabled : "+error);
+    //Disabling code that may be responsible for that crash
+    //If the error came from the database connection, this request shouldn't work
+    database_pool.query("UPDATE server_code SET active = FALSE WHERE server_id = $1 AND action_type = 'event_message_sent';", [CURRENT_GUILD.id])
+    .catch(err => {
+      logger.error("Error while disabling code for "+CURRENT_GUILD.id+", we may have a database connection failure : "+err);//Error while disabling code
+    });
+
+  }else{
+    logger.error("Error in guild code execution : "+error);
+  }
+}
+
+process.on('uncaughtException', (err) => {
+    handleError(undefined, undefined, err);
+});
+
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly )
 const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;";
+//SQL request to get code to execute, $n are defined when executing this request
+const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
 
 //A message is sent
 discordClient.on("messageCreate", async (eventMessage) =>{
+  const eventType = "event_message_sent";
+
   if(eventMessage.author.bot || eventMessage.channel.type == "DM"){return;}//Do nothing if a bot sent the message
   const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
 
-  logger.info("Event triggred : A message was sent in guild "+CURRENT_GUILD.id);
-  logger.debug("A message was sent on server "+CURRENT_GUILD.id+", creating a SQL request...");
+  logger.debug("A message was sent in guild "+CURRENT_GUILD.id+", creating a SQL request...");
 
   database_pool//Query to database to get code to execute
-  .query("SELECT code FROM server_code WHERE server_id = $1 AND action_type  = 'event_message_sent' AND active = TRUE;", [CURRENT_GUILD.id])
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
   .then(async (res)=>{
 
     logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
@@ -146,19 +170,36 @@ discordClient.on("messageCreate", async (eventMessage) =>{
 
   })
   .catch(err =>{//Got an error while getting data from database or while executing code
-    logger.error("Error while getting or executing code for "+CURRENT_GUILD.id+" : "+err);
-    //Disabling code that may be responsible for that crash
-    //If the error came from the database connection, this request shouldn't work
-    database_pool.query("UPDATE server_code SET active = FALSE WHERE server_id = $1 AND action_type = 'event_message_sent';", [CURRENT_GUILD.id])
-    .catch(err => {
-      logger.error("Error while disabling code for "+CURRENT_GUILD.id+", we may have a database connection failure : "+err);//Error while disabling code
-    });
+    handleError(CURRENT_GUILD.id, eventType, err);
   });
 });
 
 //A message is deleted
+//Only triggered if message is cached, see https://stackoverflow.com/questions/55920870/problems-with-messagedelete-in-discord-js
+//And https://discordjs.guide/popular-topics/partials.html#enabling-partials
 discordClient.on("messageDelete", async (eventMessage) =>{
+  const eventType = "event_message_deleted";
 
+  if(eventMessage.channel.type == "DM"){return;}//Do nothing if done in PM channel
+  const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
+
+  logger.debug("A message was deleted in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //A message is updated
