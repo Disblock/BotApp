@@ -203,8 +203,30 @@ discordClient.on("messageDelete", async (eventMessage) =>{
 });
 
 //A message is updated
+//Only work with cached messages
 discordClient.on("messageUpdate", async (eventOldMessage, eventNewMessage) =>{
+  const eventType = "event_message_updated";
 
+  if(eventNewMessage.channel.type == "DM"){return;}//Do nothing if done in PM channel
+  const CURRENT_GUILD = eventNewMessage.guild;//We save here the guild we're working on
+
+  logger.debug("A message was edited in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldMessage:eventOldMessage, eventNewMessage:eventNewMessage});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //An user join a guild
