@@ -233,7 +233,7 @@ discordClient.on("messageUpdate", async (eventOldMessage, eventNewMessage) =>{
 discordClient.on("guildMemberAdd", async (eventUser) =>{
   const eventType = "event_user_join";
 
-  if(eventUser.user.bot){return;}//Do nothing if done in PM channel
+  if(eventUser.user.bot){return;}//Do nothing if member is bot
   const CURRENT_GUILD = eventUser.guild;//We save here the guild we're working on
 
   logger.debug("A member joigned guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -257,7 +257,28 @@ discordClient.on("guildMemberAdd", async (eventUser) =>{
 
 //An user left a guild
 discordClient.on("guildMemberRemove", async (eventUser) =>{
+  const eventType = "event_user_left";
 
+  if(eventUser.user.bot){return;}//Do nothing if member is bot
+  const CURRENT_GUILD = eventUser.guild;//We save here the guild we're working on
+
+  logger.debug("A member left guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //A guild member is updated ( ranks, pseudo, ... )
