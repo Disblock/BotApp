@@ -139,9 +139,9 @@ async function handleError(guildId, eventType, error){
   }
 }
 
-process.on('uncaughtException', (err) => {
+/*process.on('uncaughtException', (err) => {
     handleError(undefined, undefined, err);
-});
+});*/
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly )
 const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;";
@@ -283,7 +283,28 @@ discordClient.on("guildMemberRemove", async (eventUser) =>{
 
 //A guild member is updated ( ranks, pseudo, ... )
 discordClient.on("guildMemberUpdate", async (eventOldUser, eventNewUser) =>{
+  const eventType = "event_user_updated";
 
+  if(eventOldUser.user.bot){return;}//Do nothing if member is bot
+  const CURRENT_GUILD = eventOldUser.guild;//We save here the guild we're working on
+
+  logger.debug("A member was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldUser:eventOldUser, eventNewUser:eventNewUser});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //A channel is created
