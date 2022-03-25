@@ -310,8 +310,51 @@ discordClient.on("guildMemberUpdate", async (eventOldUser, eventNewUser) =>{
 
 //A channel is created
 discordClient.on("channelCreate", async (channel) =>{
-  //TODO : check type of channel and set right var name
   //eventVoiceChannel, eventTextChannel, eventThreadChannel
+  const CURRENT_GUILD = channel.guild;
+
+  //We check here who created the channel. Bot created channels should not trigger this
+  const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "CHANNEL_CREATE"});//Store the log entry about the channel creation
+  if(!log.entries.first()){
+    return;//Logs not found, cancelling...
+  }
+  if(log.entries.first().executor.bot){
+    return;//The channel seems to be created by a bot, cancelling to avoid infinite loop...
+  }
+
+  let eventType = undefined;
+  let eventVoiceChannel, eventTextChannel, eventThreadChannel = undefined;//Store event channel
+
+  if(channel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
+    eventType = "event_text_channel_created";
+    eventTextChannel = channel;
+  }else if(channel instanceof Discord.VoiceChannel){
+    eventType = "event_voice_channel_created";
+    eventVoiceChannel = channel;
+  }else if(channel instanceof Discord.CategoryChannel){
+    //TODO : add blocks for this
+    return;
+  }else{
+    return;//Channel created is a not supported type
+  }
+
+  logger.debug("A channel was created in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel, eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //A channel is deleted
