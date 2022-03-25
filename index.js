@@ -139,6 +139,7 @@ async function handleError(guildId, eventType, error){
   }
 }
 
+//TODO : Correctly implement this
 /*process.on('uncaughtException', (err) => {
     handleError(undefined, undefined, err);
 });*/
