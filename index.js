@@ -397,7 +397,6 @@ discordClient.on("channelDelete", async (channel) =>{
 
 //A channel is updated
 discordClient.on("channelUpdate", async (oldChannel, newChannel) =>{
-  //TODO : check type of channel and set right var name
   //eventOldVoiceChannel, eventNewVoiceChannel
   //eventOldTextChannel, eventNewTextChannel
   //eventOldThreadChannel, eventNewThreadChannel
@@ -454,7 +453,36 @@ discordClient.on("channelUpdate", async (oldChannel, newChannel) =>{
 
 //A rank is created
 discordClient.on("roleCreate", async (eventRole) =>{
+  const CURRENT_GUILD = eventRole.guild;
 
+  //We check here who created the role. Bot created roles should not trigger this
+  const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "ROLE_CREATE"});//Store the log entry about the channel creation
+  if(!log.entries.first()){
+    return;//Logs not found, cancelling...
+  }
+  if(log.entries.first().executor.bot){
+    return;//A bot made it, cancelling...
+  }
+
+  let eventType = "event_role_created";
+
+  logger.debug("A role was created in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //A rank is deleted
