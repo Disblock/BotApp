@@ -546,12 +546,36 @@ discordClient.on("roleUpdate", async (eventOldRole, eventNewRole) =>{
 
 //An user is banned from the guild
 discordClient.on("guildBanAdd", async (eventBan) =>{
-  const eventUser = eventBan.user;//TODO : Check that, that's not an GuildMember
+  const CURRENT_GUILD = eventBan.guild;
+
+  const eventUser = await eventBan.guild.members.fetch(eventBan.user);
+
+  let eventType = "event_user_banned";
+
+  logger.debug("A member was banned in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
+
 });
 
 //An user is unbanned from the guild
 discordClient.on("guildBanRemove", async (eventBan) =>{
   const eventUser = eventBan.user;//TODO : Check that, that's not an GuildMember
+  //console.log(await eventBan.guild.members.fetch(eventUser));
 });
 
 //A reaction is added
