@@ -627,8 +627,31 @@ discordClient.on("messageReactionAdd", async (eventMessageReaction, eventUser2) 
 });
 
 //A reaction is removed
-discordClient.on("messageReactionRemove", async (eventMessageReaction, eventUser) =>{
-//TODO : check types https://discord.js.org/#/docs/discord.js/stable/class/Client?scrollTo=e-messageReactionAdd
+discordClient.on("messageReactionRemove", async (eventMessageReaction, eventUser2) =>{
+  const eventReaction = eventMessageReaction.emoji;
+  const eventMessage = eventMessageReaction.message;
+  const CURRENT_GUILD = eventMessage.guild;
+  const eventUser = await CURRENT_GUILD.members.fetch(eventUser2);
+
+  let eventType = "event_reaction_removed";
+
+  logger.debug("A reaction was removed in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction, eventMessage:eventMessage, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //A guild member join, leave or move from a voice channel
