@@ -656,7 +656,30 @@ discordClient.on("messageReactionRemove", async (eventMessageReaction, eventUser
 
 //A guild member join, leave or move from a voice channel
 discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
+  const CURRENT_GUILD = newState.guild;
+  const eventOldVoiceChannel = oldState.channel;
+  const eventNewVoiceChannel = newState.channel;
+  const eventUser = newState.member;
 
+  let eventType = "event_user_voice_update";
+
+  logger.debug("A voice state was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldVoiceChannel:eventOldVoiceChannel, eventNewVoiceChannel:eventNewVoiceChannel, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 //A message is pined / unpined
