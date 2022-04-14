@@ -683,14 +683,37 @@ discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
 });
 
 //A message is pined / unpined
-discordClient.on("channelPinsUpdate", async (message) =>{
+/*discordClient.on("channelPinsUpdate", async (message) =>{
 //TODO : https://discord.js.org/#/docs/discord.js/stable/class/Client?scrollTo=e-channelPinsUpdate
-//GLHF
-});
+});*/
 
 //A guildMember is typing
 discordClient.on("typingStart", async (typingState) =>{
-//TODO : https://discord.js.org/#/docs/discord.js/stable/class/Typing
+  if(!typingState.inGuild()){return;}//If not in guild, stop here
+
+  const CURRENT_GUILD = typingState.guild;
+  const eventUser = typingState.member;
+  const eventTextChannel = typingState.channel;
+
+  const eventType = "event_user_start_writting";
+
+  logger.debug("A user started typing in guild "+CURRENT_GUILD.id+", creating a SQL request...");
+
+  database_pool//Query to database to get code to execute
+  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
+  .then(async (res)=>{
+
+    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
+
+    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser, eventTextChannel:eventTextChannel});//A sandbox is created in module init_sandbox.js
+    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
+      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
+    }
+
+  })
+  .catch(err =>{//Got an error while getting data from database or while executing code
+    handleError(CURRENT_GUILD.id, eventType, err);
+  });
 });
 
 /*############################################*/
