@@ -3,7 +3,7 @@
 /* Homemade modules */
 /*############################################*/
 const init_logs = require('./modules/init_logs.js');//Show a message in logs files and console when starting
-const getSandbox = require('./modules/init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
+const event_functions = require('./modules/event_functions.js');//Store the executed functions on events
 
 /*############################################*/
 /* Imported modules */
@@ -150,536 +150,91 @@ const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sent
 const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
 
 //A message is sent
-discordClient.on("messageCreate", async (eventMessage) =>{
-  const eventType = "event_message_sent";
-
-  if(eventMessage.author.bot || eventMessage.channel.type == "DM"){return;}//Do nothing if a bot sent the message
-  const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
-
-  logger.debug("A message was sent in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+discordClient.on("messageCreate", async(eventMessage)=>{
+  event_functions.messageCreate(eventMessage, logger, database_pool);
 });
 
 //A message is deleted
 //Only triggered if message is cached, see https://stackoverflow.com/questions/55920870/problems-with-messagedelete-in-discord-js
 //And https://discordjs.guide/popular-topics/partials.html#enabling-partials
 discordClient.on("messageDelete", async (eventMessage) =>{
-  const eventType = "event_message_deleted";
-
-  if(eventMessage.channel.type == "DM"){return;}//Do nothing if done in PM channel
-  const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
-
-  logger.debug("A message was deleted in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.messageDelete(eventMessage, logger, database_pool);
 });
 
 //A message is updated
 //Only work with cached messages
 discordClient.on("messageUpdate", async (eventOldMessage, eventNewMessage) =>{
-  const eventType = "event_message_updated";
-
-  if(eventNewMessage.channel.type == "DM"){return;}//Do nothing if done in PM channel
-  const CURRENT_GUILD = eventNewMessage.guild;//We save here the guild we're working on
-
-  logger.debug("A message was edited in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldMessage:eventOldMessage, eventNewMessage:eventNewMessage});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.messageUpdate(eventOldMessage, eventNewMessage, logger, database_pool);
 });
 
 //An user join a guild
 discordClient.on("guildMemberAdd", async (eventUser) =>{
-  const eventType = "event_user_join";
-
-  if(eventUser.user.bot){return;}//Do nothing if member is bot
-  const CURRENT_GUILD = eventUser.guild;//We save here the guild we're working on
-
-  logger.debug("A member joigned guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.guildMemberAdd(eventUser, logger, database_pool);
 });
 
 //An user left a guild
 discordClient.on("guildMemberRemove", async (eventUser) =>{
-  const eventType = "event_user_left";
-
-  if(eventUser.user.bot){return;}//Do nothing if member is bot
-  const CURRENT_GUILD = eventUser.guild;//We save here the guild we're working on
-
-  logger.debug("A member left guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.guildMemberRemove(eventUser, logger, database_pool);
 });
 
 //A guild member is updated ( ranks, pseudo, ... )
 discordClient.on("guildMemberUpdate", async (eventOldUser, eventNewUser) =>{
-  const eventType = "event_user_updated";
-
-  if(eventOldUser.user.bot){return;}//Do nothing if member is bot
-  const CURRENT_GUILD = eventOldUser.guild;//We save here the guild we're working on
-
-  logger.debug("A member was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldUser:eventOldUser, eventNewUser:eventNewUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.guildMemberUpdate(eventOldUser, eventNewUser, logger, database_pool);
 });
 
 //A channel is created
 discordClient.on("channelCreate", async (channel) =>{
-  //eventVoiceChannel, eventTextChannel, eventThreadChannel
-  const CURRENT_GUILD = channel.guild;
-
-  //We check here who created the channel. Bot created channels should not trigger this
-  const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "CHANNEL_CREATE"});//Store the log entry about the channel creation
-  if(!log.entries.first()){
-    return;//Logs not found, cancelling...
-  }
-  if(log.entries.first().executor.bot){
-    return;//The channel seems to be created by a bot, cancelling to avoid infinite loop...
-  }
-
-  let eventType = undefined;
-  let eventVoiceChannel, eventTextChannel, eventThreadChannel = undefined;//Store event channel
-
-  if(channel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
-    eventType = "event_text_channel_created";
-    eventTextChannel = channel;
-  }else if(channel instanceof Discord.VoiceChannel){
-    eventType = "event_voice_channel_created";
-    eventVoiceChannel = channel;
-  }else if(channel instanceof Discord.ThreadChannel){
-    //TODO : add blocks for this
-    return;
-  }else{
-    return;//Channel created is a not supported type
-  }
-
-  logger.debug("A channel was created in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel, eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.channelCreate(channel, logger, database_pool);
 });
 
 //A channel is deleted
 discordClient.on("channelDelete", async (channel) =>{
-  const CURRENT_GUILD = channel.guild;
-  let eventType = undefined;
-  let eventVoiceChannel, eventTextChannel, eventThreadChannel = undefined;//Store event channel
-
-  if(channel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
-    eventType = "event_text_channel_deleted";
-    eventTextChannel = channel;
-  }else if(channel instanceof Discord.VoiceChannel){
-    eventType = "event_voice_channel_deleted";
-    eventVoiceChannel = channel;
-  }else if(channel instanceof Discord.ThreadChannel){
-    //TODO : add blocks for this
-    return;
-  }else{
-    return;//Channel created is a not supported type
-  }
-
-  logger.debug("A channel was deleted in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel, eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.channelDelete(channel, logger, database_pool);
 });
 
 //A channel is updated
 discordClient.on("channelUpdate", async (oldChannel, newChannel) =>{
-  //eventOldVoiceChannel, eventNewVoiceChannel
-  //eventOldTextChannel, eventNewTextChannel
-  //eventOldThreadChannel, eventNewThreadChannel
-
-  const CURRENT_GUILD = newChannel.guild;
-
-  //We check here who updated the channel. Bot updated channels should not trigger this
-  const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "CHANNEL_UPDATE"});//Store the log entry about the channel creation
-  if(!log.entries.first()){
-    return;//Logs not found, cancelling...
-  }
-  if(log.entries.first().executor.bot){
-    return;//The channel seems to be updated by a bot, cancelling to avoid infinite loop...
-  }
-
-  let eventType = undefined;
-  let eventOldVoiceChannel, eventNewVoiceChannel, eventOldTextChannel, eventNewTextChannel, eventOldThreadChannel, eventNewThreadChannel = undefined;//Store event channel
-
-  if(newChannel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
-    eventType = "event_text_channel_edited";
-    eventOldTextChannel = oldChannel;
-    eventNewTextChannel = newChannel;
-  }else if(newChannel instanceof Discord.VoiceChannel){
-    eventType = "event_voice_channel_edited";
-    eventOldVoiceChannel = oldChannel;
-    eventNewVoiceChannel = newChannel;
-  }else if(newChannel instanceof Discord.CategoryChannel){
-    //TODO : add blocks for this
-    return;
-  }else{
-    return;//Channel created is a not supported type
-  }
-
-  logger.debug("A channel was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord,
-      eventOldVoiceChannel:eventOldVoiceChannel, eventNewVoiceChannel:eventNewVoiceChannel, eventOldTextChannel:eventOldTextChannel,
-      eventNewTextChannel:eventNewTextChannel, eventOldThreadChannel:eventOldThreadChannel, eventNewThreadChannel:eventNewThreadChannel});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.channelUpdate(oldChannel, newChannel, logger, database_pool);
 });
 
 //A rank is created
 discordClient.on("roleCreate", async (eventRole) =>{
-  const CURRENT_GUILD = eventRole.guild;
-
-  //We check here who created the role. Bot created roles should not trigger this
-  const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "ROLE_CREATE"});//Store the log entry about the channel creation
-  if(!log.entries.first()){
-    return;//Logs not found, cancelling...
-  }
-  if(log.entries.first().executor.bot){
-    return;//A bot made it, cancelling...
-  }
-
-  let eventType = "event_role_created";
-
-  logger.debug("A role was created in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.roleCreate(eventRole, logger, database_pool);
 });
 
 //A rank is deleted
 discordClient.on("roleDelete", async (eventRole) =>{
-  const CURRENT_GUILD = eventRole.guild;
-
-  let eventType = "event_role_deleted";
-
-  logger.debug("A role was deleted in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.roleDelete(eventRole, logger, database_pool);
 });
 
 //A rank is edited
 discordClient.on("roleUpdate", async (eventOldRole, eventNewRole) =>{
-  const CURRENT_GUILD = eventNewRole.guild;
-
-  //We check here who edited the role. Bot edited roles should not trigger this
-  const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "ROLE_UPDATE"});//Store the log entry about the channel creation
-  if(!log.entries.first()){
-    return;//Logs not found, cancelling...
-  }
-  if(log.entries.first().executor.bot){
-    return;//A bot made it, cancelling...
-  }
-
-  let eventType = "event_role_edited";
-
-  logger.debug("A role was edited in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldRole:eventOldRole, eventNewRole:eventNewRole});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.roleUpdate(eventOldRole, eventNewRole, logger, database_pool);
 });
 
 //An user is banned from the guild
 discordClient.on("guildBanAdd", async (eventBan) =>{
-  const CURRENT_GUILD = eventBan.guild;
-
-  const eventUser = await eventBan.guild.members.fetch(eventBan.user);
-
-  let eventType = "event_user_banned";
-
-  logger.debug("A member was banned in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
-
+  event_functions.guildBanAdd(eventBan, logger, database_pool);
 });
 
 //An user is unbanned from the guild
 discordClient.on("guildBanRemove", async (eventBan) =>{
-  const eventUser = eventBan.user;//TODO : Check that, that's not an GuildMember
-  const CURRENT_GUILD = eventBan.guild;
-
-  let eventType = "event_user_unbanned";
-
-  logger.debug("A member was unbanned in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.guildBanRemove(eventBan, logger, database_pool);
 });
 
 //A reaction is added
 discordClient.on("messageReactionAdd", async (eventMessageReaction, eventUser2) =>{
-  const eventReaction = eventMessageReaction.emoji;
-  const eventMessage = eventMessageReaction.message;
-  const CURRENT_GUILD = eventMessage.guild;
-  const eventUser = await CURRENT_GUILD.members.fetch(eventUser2);
-
-  let eventType = "event_reaction_added";
-
-  logger.debug("A reaction was added in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction, eventMessage:eventMessage, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.messageReactionAdd(eventMessageReaction, eventUser2, logger, database_pool);
 });
 
 //A reaction is removed
 discordClient.on("messageReactionRemove", async (eventMessageReaction, eventUser2) =>{
-  const eventReaction = eventMessageReaction.emoji;
-  const eventMessage = eventMessageReaction.message;
-  const CURRENT_GUILD = eventMessage.guild;
-  const eventUser = await CURRENT_GUILD.members.fetch(eventUser2);
-
-  let eventType = "event_reaction_removed";
-
-  logger.debug("A reaction was removed in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction, eventMessage:eventMessage, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.messageReactionRemove(eventMessageReaction, eventUser2, logger, database_pool);
 });
 
 //A guild member join, leave or move from a voice channel
 discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
-  const CURRENT_GUILD = newState.guild;
-  const eventOldVoiceChannel = oldState.channel;
-  const eventNewVoiceChannel = newState.channel;
-  const eventUser = newState.member;
-
-  let eventType = "event_user_voice_update";
-
-  logger.debug("A voice state was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldVoiceChannel:eventOldVoiceChannel, eventNewVoiceChannel:eventNewVoiceChannel, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.voiceStateUpdate(oldState, newState, logger, database_pool);
 });
 
 //A message is pined / unpined
@@ -689,31 +244,7 @@ discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
 
 //A guildMember is typing
 discordClient.on("typingStart", async (typingState) =>{
-  if(!typingState.inGuild()){return;}//If not in guild, stop here
-
-  const CURRENT_GUILD = typingState.guild;
-  const eventUser = typingState.member;
-  const eventTextChannel = typingState.channel;
-
-  const eventType = "event_user_start_writting";
-
-  logger.debug("A user started typing in guild "+CURRENT_GUILD.id+", creating a SQL request...");
-
-  database_pool//Query to database to get code to execute
-  .query(sqlRequest, [CURRENT_GUILD.id, eventType])
-  .then(async (res)=>{
-
-    logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
-
-    const vm = getSandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser, eventTextChannel:eventTextChannel});//A sandbox is created in module init_sandbox.js
-    for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-      vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-    }
-
-  })
-  .catch(err =>{//Got an error while getting data from database or while executing code
-    handleError(CURRENT_GUILD.id, eventType, err);
-  });
+  event_functions.typingStart(typingState, logger, database_pool);
 });
 
 /*############################################*/
