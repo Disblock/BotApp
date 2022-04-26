@@ -3,7 +3,7 @@
 /* Functions executed on guilds events are defined here */
 
 const {NodeVM} = require('vm2');//Sandbox
-const get_sandbox = require('./init_sandbox.js').get_sandbox;//Return a sandbox when called with object containing shared vars as arg
+const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
 const Discord = require('discord.js');
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly )

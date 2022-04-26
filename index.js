@@ -123,7 +123,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
 //Functions args have the same name than the var created in Blockly generator
 
 //Function to handle errors in guilds code
-async function handleError(guildId, eventType, error){
+/*async function handleError(guildId, eventType, error){
   if(guildId!=undefined && eventType!=undefined){
 
     logger.error("Error while getting or executing code for "+guildId+", the code will be disabled : "+error);
@@ -137,17 +137,14 @@ async function handleError(guildId, eventType, error){
   }else{
     logger.error("Error in guild code execution : "+error);
   }
-}
+}*/
 
-//TODO : Correctly implement this
-/*process.on('uncaughtException', (err) => {
-    handleError(undefined, undefined, err);
-});*/
-
-//Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly )
-const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;";
-//SQL request to get code to execute, $n are defined when executing this request
-const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
+process.on('uncaughtException', (err) => {
+    //handleError(undefined, undefined, err);
+    if(process.env.BOT_LOG_ERRORS==='true'){
+      logger.error(err);
+    }
+});
 
 //A message is sent
 discordClient.on("messageCreate", async(eventMessage)=>{
