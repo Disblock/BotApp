@@ -118,6 +118,24 @@ database_pool.query('SELECT NOW();', (err, res) => {
 });
 
 /*############################################*/
+/* System events */
+/*############################################*/
+//These events are only used by the bot, users can't use these
+
+  discordClient.on("guildCreate", async(guild)=>{
+    database_pool.query("INSERT INTO servers (server_id, name) VALUES ($1, $2)", [guild.id, guild.name])
+    .then(()=>{
+      logger.info("Bot was added in a new server : "+guild.id+"("+guild.name+")");
+      logger.debug("Successfully added a new server to database !");
+    })
+    .catch((err)=>{logger.error("Error when joining a new server ! ID :"+guild.id+", error : "+err);})
+  });
+
+  discordClient.on("guildDelete", async(guild)=>{
+    logger.info("Bot was removed from a guild : "+guild.id+"("+guild.name+")");
+  });
+
+/*############################################*/
 /* Adding events */
 /*############################################*/
 //Functions args have the same name than the var created in Blockly generator
