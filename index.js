@@ -249,6 +249,7 @@ discordClient.on("messageReactionRemove", async (eventMessageReaction, eventUser
 
 //A guild member join, leave or move from a voice channel
 discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
+  if(oldState.channel==newState.channel){return;}//Sames channel, we don't have a "user muted himself" block for the moment, so we can stop here
   event_functions.voiceStateUpdate(oldState, newState, logger, database_pool);
 });
 
