@@ -233,9 +233,10 @@ discordClient.on("guildBanAdd", async (eventBan) =>{
 });
 
 //An user is unbanned from the guild
-discordClient.on("guildBanRemove", async (eventBan) =>{
+//Disabled : the event block of this event was ( temporarily ) disabled due to impossibility to get the unbanned user
+/*discordClient.on("guildBanRemove", async (eventBan) =>{
   event_functions.guildBanRemove(eventBan, logger, database_pool);
-});
+});*/
 
 //A reaction is added
 discordClient.on("messageReactionAdd", async (eventMessageReaction, eventUser2) =>{
