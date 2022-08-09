@@ -123,7 +123,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
 //These events are only used by the bot, users can't use these
 
   discordClient.on("guildCreate", async(guild)=>{
-    database_pool.query("INSERT INTO servers (server_id, name) VALUES ($1, $2)", [guild.id, guild.name])
+    database_pool.query("INSERT INTO servers (server_id, name) VALUES ($1, $2) ON CONFLICT DO NOTHING;", [guild.id, guild.name])
     .then(()=>{
       logger.info("Bot was added in a new server : "+guild.id+"("+guild.name+")");
       logger.debug("Successfully added a new server to database !");
@@ -233,9 +233,10 @@ discordClient.on("guildBanAdd", async (eventBan) =>{
 });
 
 //An user is unbanned from the guild
-discordClient.on("guildBanRemove", async (eventBan) =>{
+//Disabled : the event block of this event was ( temporarily ) disabled due to impossibility to get the unbanned user
+/*discordClient.on("guildBanRemove", async (eventBan) =>{
   event_functions.guildBanRemove(eventBan, logger, database_pool);
-});
+});*/
 
 //A reaction is added
 discordClient.on("messageReactionAdd", async (eventMessageReaction, eventUser2) =>{
@@ -249,6 +250,7 @@ discordClient.on("messageReactionRemove", async (eventMessageReaction, eventUser
 
 //A guild member join, leave or move from a voice channel
 discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
+  if(oldState.channel==newState.channel){return;}//Sames channel, we don't have a "user muted himself" block for the moment, so we can stop here
   event_functions.voiceStateUpdate(oldState, newState, logger, database_pool);
 });
 

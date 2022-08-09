@@ -6,10 +6,24 @@ const {NodeVM} = require('vm2');//Sandbox
 const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
 const Discord = require('discord.js');
 
-//Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly )
-const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let arrayStorage = {};";
+//Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
+const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {}; /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);}";
+
 //SQL request to get code to execute, $n are defined when executing this request
 const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
+
+//Function used to check if a bot or an user triggered an event
+async function didBotDidIt(guild, eventType){
+  //We check here who edited the role. Bot edited roles should not trigger this
+  const log = await guild.fetchAuditLogs({limit:1, type: eventType});//Store the log entry about the channel creation
+  if(!log.entries.first()){
+    return undefined;//Logs not found, cancelling...
+  }
+  if(log.entries.first().executor.bot){
+    return true;//A bot made it, cancelling...
+  }
+  return false;//An user did it
+}
 
 
 module.exports = {
@@ -168,14 +182,7 @@ module.exports = {
     //eventVoiceChannel, eventTextChannel, eventThreadChannel
     const CURRENT_GUILD = channel.guild;
 
-    //We check here who created the channel. Bot created channels should not trigger this
-    const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "CHANNEL_CREATE"});//Store the log entry about the channel creation
-    if(!log.entries.first()){
-      return;//Logs not found, cancelling...
-    }
-    if(log.entries.first().executor.bot){
-      return;//The channel seems to be created by a bot, cancelling to avoid infinite loop...
-    }
+    if(await didBotDidIt(CURRENT_GUILD, "CHANNEL_CREATE")){return;}//A bot triggered this event
 
     let eventType = undefined;
     let eventVoiceChannel, eventTextChannel, eventThreadChannel = undefined;//Store event channel
@@ -217,6 +224,8 @@ module.exports = {
     let eventType = undefined;
     let eventVoiceChannel, eventTextChannel, eventThreadChannel = undefined;//Store event channel
 
+    if(await didBotDidIt(CURRENT_GUILD, "CHANNEL_DELETE")){return;}//A bot triggered this event
+
     if(channel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
       eventType = "event_text_channel_deleted";
       eventTextChannel = channel;
@@ -257,13 +266,7 @@ module.exports = {
     const CURRENT_GUILD = newChannel.guild;
 
     //We check here who updated the channel. Bot updated channels should not trigger this
-    const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "CHANNEL_UPDATE"});//Store the log entry about the channel creation
-    if(!log.entries.first()){
-      return;//Logs not found, cancelling...
-    }
-    if(log.entries.first().executor.bot){
-      return;//The channel seems to be updated by a bot, cancelling to avoid infinite loop...
-    }
+    if(await didBotDidIt(CURRENT_GUILD, "CHANNEL_UPDATE")){return;}
 
     let eventType = undefined;
     let eventOldVoiceChannel, eventNewVoiceChannel, eventOldTextChannel, eventNewTextChannel, eventOldThreadChannel, eventNewThreadChannel = undefined;//Store event channel
@@ -308,13 +311,7 @@ module.exports = {
     const CURRENT_GUILD = eventRole.guild;
 
     //We check here who created the role. Bot created roles should not trigger this
-    const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "ROLE_CREATE"});//Store the log entry about the channel creation
-    if(!log.entries.first()){
-      return;//Logs not found, cancelling...
-    }
-    if(log.entries.first().executor.bot){
-      return;//A bot made it, cancelling...
-    }
+    if(await didBotDidIt(CURRENT_GUILD, "ROLE_CREATE")){return;}
 
     let eventType = "event_role_created";
 
@@ -340,6 +337,9 @@ module.exports = {
   roleDelete: async(eventRole, logger, database_pool)=>{
     const CURRENT_GUILD = eventRole.guild;
 
+    //Only real users should trigger events
+    if(await didBotDidIt(CURRENT_GUILD, "ROLE_DELETE")){return;}
+
     let eventType = "event_role_deleted";
 
     logger.debug("A role was deleted in guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -364,14 +364,8 @@ module.exports = {
   roleUpdate: async(eventOldRole, eventNewRole, logger, database_pool)=>{
     const CURRENT_GUILD = eventNewRole.guild;
 
-    //We check here who edited the role. Bot edited roles should not trigger this
-    const log = await CURRENT_GUILD.fetchAuditLogs({limit:1, type: "ROLE_UPDATE"});//Store the log entry about the channel creation
-    if(!log.entries.first()){
-      return;//Logs not found, cancelling...
-    }
-    if(log.entries.first().executor.bot){
-      return;//A bot made it, cancelling...
-    }
+    //Only real users should trigger events
+    if(await didBotDidIt(CURRENT_GUILD, "ROLE_UPDATE")){return;}
 
     let eventType = "event_role_edited";
 
@@ -451,6 +445,9 @@ module.exports = {
     const CURRENT_GUILD = eventMessage.guild;
     const eventUser = await CURRENT_GUILD.members.fetch(eventUser2);
 
+    //Only real users should trigger events
+    if(eventUser.user.bot){return;}
+
     let eventType = "event_reaction_added";
 
     logger.debug("A reaction was added in guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -477,6 +474,9 @@ module.exports = {
     const eventMessage = eventMessageReaction.message;
     const CURRENT_GUILD = eventMessage.guild;
     const eventUser = await CURRENT_GUILD.members.fetch(eventUser2);
+
+    //Only real users should trigger events
+    if(eventUser.user.bot){return;}
 
     let eventType = "event_reaction_removed";
 
@@ -505,6 +505,9 @@ module.exports = {
     const eventNewVoiceChannel = newState.channel;
     const eventUser = newState.member;
 
+    //Only real users should trigger events
+    if(eventUser.user.bot){return;}
+
     let eventType = "event_user_voice_update";
 
     logger.debug("A voice state was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -532,6 +535,9 @@ module.exports = {
     const CURRENT_GUILD = typingState.guild;
     const eventUser = typingState.member;
     const eventTextChannel = typingState.channel;
+
+    //Only real users should trigger events
+    if(eventUser.user.bot){return;}
 
     const eventType = "event_user_start_writting";
 
