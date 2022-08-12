@@ -163,7 +163,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
 process.on('uncaughtException', (err) => {
     //handleError(undefined, undefined, err);
     if(process.env.BOT_LOG_ERRORS==='true'){
-      logger.error(err);
+      logger.error("Error while executing server code : "+err.message);
     }
 });
 

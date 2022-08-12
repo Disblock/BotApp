@@ -9,6 +9,7 @@ module.exports = {
   getSandbox: function(args){
 
     return new NodeVM({
+        //console: 'inherit', //Show console
         console: 'off',
         sandbox: args,
         eval: false,

@@ -276,20 +276,24 @@ module.exports = {
     const CURRENT_GUILD = newChannel.guild;
 
     //We check here who updated the channel. Bot updated channels should not trigger this
-    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelUpdate)){return;}
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelUpdate) ||
+        await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelOverwriteUpdate) ||
+        await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelOverwriteCreate) ||
+        await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelOverwriteDelete)
+      ){return;}
 
     let eventType = undefined;
     let eventOldVoiceChannel, eventNewVoiceChannel, eventOldTextChannel, eventNewTextChannel, eventOldThreadChannel, eventNewThreadChannel = undefined;//Store event channel
 
-    if(channel.type === Discord.ChannelType.GuildText){//Type of channel is checked and triggered event block determined
+    if(newChannel.type === Discord.ChannelType.GuildText){//Type of channel is checked and triggered event block determined
       eventType = "event_text_channel_edited";
       eventOldTextChannel = oldChannel;
       eventNewTextChannel = newChannel;
-    }else if(channel.type === Discord.ChannelType.GuildVoice){
+    }else if(newChannel.type === Discord.ChannelType.GuildVoice){
       eventType = "event_voice_channel_edited";
       eventOldVoiceChannel = oldChannel;
       eventNewVoiceChannel = newChannel;
-    }else if(channel.type === Discord.ChannelType.GuildPublicThread /*|| channel.type === Discord.ChannelType.GuildPrivateThread*/){
+    }else if(newChannel.type === Discord.ChannelType.GuildPublicThread || newChannel.type === Discord.ChannelType.GuildPrivateThread){
       //TODO : add blocks for this
       return;
     }else{
