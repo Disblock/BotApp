@@ -7,7 +7,7 @@ const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox w
 const Discord = require('discord.js');
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
-const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {}; /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);}";
+const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {}; /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);} function mathRandomInt(min, max){return Math.floor(Math.random() * (max - min + 1) + min)}";
 
 //SQL request to get code to execute, $n are defined when executing this request
 const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
