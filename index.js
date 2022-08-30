@@ -41,7 +41,10 @@ const discordClient = new Discord.Client({
     Discord.GatewayIntentBits.MessageContent,
     Discord.GatewayIntentBits.GuildScheduledEvents
   ],
-  rejectOnRateLimit: ()=>{return(true)},
+  rest:{
+    //https://discord.js.org/#/docs/rest/1.0.1/typedef/RESTOptions
+    rejectOnRateLimit: function(rateLimitData){return true}
+  },
   sweepers:
   {
       'messages':{
