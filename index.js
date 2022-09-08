@@ -141,6 +141,19 @@ database_pool.query('SELECT NOW();', (err, res) => {
     logger.info("Bot was removed from a guild : "+guild.id+"("+guild.name+")");
   });
 
+  discordClient.on("guildUpdate", async(oldGuild, newGuild)=>{
+    if(oldGuild.name===newGuild.name)return;
+    //This guild has a new name, we will save it in database
+    database_pool.query("UPDATE servers SET name = $1 WHERE server_id = $2;", [newGuild.name, newGuild.id])
+    .then(async()=>{
+      logger.debug("Saved a new name for guild "+newGuild.id);
+    })
+    .catch((err)=>{
+      logger.error("Error while saving the new name of guild "+newGuild.id+" : "+err);
+    });
+
+  });
+
 /*############################################*/
 /* Adding events */
 /*############################################*/
