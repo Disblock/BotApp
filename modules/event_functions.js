@@ -7,7 +7,7 @@ const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox w
 const Discord = require('discord.js');
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
-const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {}; /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);}";
+const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {}; /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);} function mathRandomInt(min, max){return Math.floor(Math.random() * (max - min + 1) + min)}";
 
 //SQL request to get code to execute, $n are defined when executing this request
 const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
@@ -31,7 +31,7 @@ module.exports = {
   messageCreate: async(eventMessage, logger, database_pool)=>{
     const eventType = "event_message_sent";
 
-    if(eventMessage.author.bot || eventMessage.channel.type == "DM"){return;}//Do nothing if a bot sent the message or sent in DM
+    if(eventMessage.author.bot || eventMessage.channel.type === Discord.ChannelType.DM){return;}//Do nothing if a bot sent the message or sent in DM
     const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
 
     logger.debug("A message was sent in guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -56,7 +56,12 @@ module.exports = {
   messageDelete: async(eventMessage, logger, database_pool)=>{
     const eventType = "event_message_deleted";
 
-    if(eventMessage.channel.type == "DM"){return;}//Do nothing if done in PM channel
+    if(eventMessage.partial){
+      //Partial, we can't get data about this message since it is deleted
+      return;
+    }
+
+    if(eventMessage.channel.type === Discord.ChannelType.DM){return;}//Do nothing if done in PM channel
     const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
 
     logger.debug("A message was deleted in guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -81,7 +86,12 @@ module.exports = {
   messageUpdate: async(eventOldMessage, eventNewMessage, logger, database_pool) =>{
     const eventType = "event_message_updated";
 
-    if(eventNewMessage.channel.type == "DM"){return;}//Do nothing if done in PM channel
+    if(eventOldMessage.partial){
+      //Partial, we can't get old message, so we can stop here
+      return;
+    }
+
+    if(eventNewMessage.channel.type == Discord.ChannelType.DM){return;}//Do nothing if done in PM channel
     const CURRENT_GUILD = eventNewMessage.guild;//We save here the guild we're working on
 
     logger.debug("A message was edited in guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -182,18 +192,18 @@ module.exports = {
     //eventVoiceChannel, eventTextChannel, eventThreadChannel
     const CURRENT_GUILD = channel.guild;
 
-    if(await didBotDidIt(CURRENT_GUILD, "CHANNEL_CREATE")){return;}//A bot triggered this event
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelCreate)){return;}//A bot triggered this event
 
     let eventType = undefined;
     let eventVoiceChannel, eventTextChannel, eventThreadChannel = undefined;//Store event channel
 
-    if(channel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
+    if(channel.type === Discord.ChannelType.GuildText){//Type of channel is checked and triggered event block determined
       eventType = "event_text_channel_created";
       eventTextChannel = channel;
-    }else if(channel instanceof Discord.VoiceChannel){
+    }else if(channel.type === Discord.ChannelType.GuildVoice){
       eventType = "event_voice_channel_created";
       eventVoiceChannel = channel;
-    }else if(channel instanceof Discord.ThreadChannel){
+    }else if(channel.type === Discord.ChannelType.GuildPublicThread || channel.type === Discord.ChannelType.GuildPrivateThread){
       //TODO : add blocks for this
       return;
     }else{
@@ -224,15 +234,15 @@ module.exports = {
     let eventType = undefined;
     let eventVoiceChannel, eventTextChannel, eventThreadChannel = undefined;//Store event channel
 
-    if(await didBotDidIt(CURRENT_GUILD, "CHANNEL_DELETE")){return;}//A bot triggered this event
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelDelete)){return;}//A bot triggered this event
 
-    if(channel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
+    if(channel.type === Discord.ChannelType.GuildText){//Type of channel is checked and triggered event block determined
       eventType = "event_text_channel_deleted";
       eventTextChannel = channel;
-    }else if(channel instanceof Discord.VoiceChannel){
+    }else if(channel.type === Discord.ChannelType.GuildVoice){
       eventType = "event_voice_channel_deleted";
       eventVoiceChannel = channel;
-    }else if(channel instanceof Discord.ThreadChannel){
+    }else if(channel.type === Discord.ChannelType.GuildPublicThread || channel.type === Discord.ChannelType.GuildPrivateThread){
       //TODO : add blocks for this
       return;
     }else{
@@ -266,20 +276,24 @@ module.exports = {
     const CURRENT_GUILD = newChannel.guild;
 
     //We check here who updated the channel. Bot updated channels should not trigger this
-    if(await didBotDidIt(CURRENT_GUILD, "CHANNEL_UPDATE")){return;}
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelUpdate) ||
+        await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelOverwriteUpdate) ||
+        await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelOverwriteCreate) ||
+        await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.ChannelOverwriteDelete)
+      ){return;}
 
     let eventType = undefined;
     let eventOldVoiceChannel, eventNewVoiceChannel, eventOldTextChannel, eventNewTextChannel, eventOldThreadChannel, eventNewThreadChannel = undefined;//Store event channel
 
-    if(newChannel instanceof Discord.TextChannel){//Type of channel is checked and triggered event block determined
+    if(newChannel.type === Discord.ChannelType.GuildText){//Type of channel is checked and triggered event block determined
       eventType = "event_text_channel_edited";
       eventOldTextChannel = oldChannel;
       eventNewTextChannel = newChannel;
-    }else if(newChannel instanceof Discord.VoiceChannel){
+    }else if(newChannel.type === Discord.ChannelType.GuildVoice){
       eventType = "event_voice_channel_edited";
       eventOldVoiceChannel = oldChannel;
       eventNewVoiceChannel = newChannel;
-    }else if(newChannel instanceof Discord.CategoryChannel){
+    }else if(newChannel.type === Discord.ChannelType.GuildPublicThread || newChannel.type === Discord.ChannelType.GuildPrivateThread){
       //TODO : add blocks for this
       return;
     }else{
@@ -311,7 +325,7 @@ module.exports = {
     const CURRENT_GUILD = eventRole.guild;
 
     //We check here who created the role. Bot created roles should not trigger this
-    if(await didBotDidIt(CURRENT_GUILD, "ROLE_CREATE")){return;}
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.RoleCreate)){return;}
 
     let eventType = "event_role_created";
 
@@ -338,7 +352,7 @@ module.exports = {
     const CURRENT_GUILD = eventRole.guild;
 
     //Only real users should trigger events
-    if(await didBotDidIt(CURRENT_GUILD, "ROLE_DELETE")){return;}
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.RoleDelete)){return;}
 
     let eventType = "event_role_deleted";
 
@@ -365,7 +379,7 @@ module.exports = {
     const CURRENT_GUILD = eventNewRole.guild;
 
     //Only real users should trigger events
-    if(await didBotDidIt(CURRENT_GUILD, "ROLE_UPDATE")){return;}
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.RoleUpdate)){return;}
 
     let eventType = "event_role_edited";
 
@@ -440,6 +454,17 @@ module.exports = {
   },
 
   messageReactionAdd: async(eventMessageReaction, eventUser2, logger, database_pool)=>{
+
+    if(eventMessageReaction.partial){
+      //Partial, we need to get data for this event
+      try {
+        await eventMessageReaction.fetch();
+      } catch (error) {
+        logger.error('Error when getting partial messageReaction '+ error);
+        return;// Return, eventMessage may be null/undefined
+      }
+    }
+
     const eventReaction = eventMessageReaction.emoji;
     const eventMessage = eventMessageReaction.message;
     const CURRENT_GUILD = eventMessage.guild;
@@ -470,6 +495,17 @@ module.exports = {
   },
 
   messageReactionRemove: async(eventMessageReaction, eventUser2, logger, database_pool)=>{
+
+    if(eventMessageReaction.partial){
+      //Partial, we need to get data for this event
+      try {
+        await eventMessageReaction.fetch();
+      } catch (error) {
+        logger.error('Error when getting partial messageReaction '+ error);
+        return;// Return, eventMessage may be null/undefined
+      }
+    }
+
     const eventReaction = eventMessageReaction.emoji;
     const eventMessage = eventMessageReaction.message;
     const CURRENT_GUILD = eventMessage.guild;

@@ -23,30 +23,36 @@ const discordClient = new Discord.Client({
   restGlobalRateLimit: 50,
   intents:[
     //Check https://discord.js.org/#/docs/discord.js/stable/class/Intents?scrollTo=s-FLAGS
-    Discord.Intents.FLAGS.GUILDS,
-    Discord.Intents.FLAGS.GUILD_MEMBERS,
-    Discord.Intents.FLAGS.GUILD_BANS,
-    //Discord.Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
-    //Discord.Intents.FLAGS.GUILD_INTEGRATIONS,
-    Discord.Intents.FLAGS.GUILD_WEBHOOKS,
-    Discord.Intents.FLAGS.GUILD_INVITES,
-    Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-    Discord.Intents.FLAGS.GUILD_PRESENCES,
-    Discord.Intents.FLAGS.GUILD_MESSAGES,
-    Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-    Discord.Intents.FLAGS.GUILD_MESSAGE_TYPING,
-    Discord.Intents.FLAGS.DIRECT_MESSAGES,
-    Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-    Discord.Intents.FLAGS.GUILD_SCHEDULED_EVENTS
+    Discord.GatewayIntentBits.Guilds,
+    Discord.GatewayIntentBits.GuildMembers,
+    Discord.GatewayIntentBits.GuildBans,
+    //Discord.GatewayIntentBits.GuildEmojisAndStickers,
+    //Discord.GatewayIntentBits.GuildIntegrations,
+    Discord.GatewayIntentBits.GuildWebhooks,
+    Discord.GatewayIntentBits.GuildInvites,
+    Discord.GatewayIntentBits.GuildVoiceStates,
+    Discord.GatewayIntentBits.GuildPresences,
+    Discord.GatewayIntentBits.GuildMessages,
+    Discord.GatewayIntentBits.GuildMessageReactions,
+    Discord.GatewayIntentBits.GuildMessageTyping,
+    Discord.GatewayIntentBits.DirectMessages,
+    Discord.GatewayIntentBits.DirectMessageReactions,
+    //Discord.GatewayIntentBits.DirectMessageTyping,
+    Discord.GatewayIntentBits.MessageContent,
+    Discord.GatewayIntentBits.GuildScheduledEvents
   ],
-  rejectOnRateLimit: ()=>{return(true)},
+  rest:{
+    //https://discord.js.org/#/docs/rest/1.0.1/typedef/RESTOptions
+    rejectOnRateLimit: function(rateLimitData){return true}
+  },
   sweepers:
   {
       'messages':{
         interval: 60,
         lifetime: 3600 //A message is saved in cache for an hour
       }
-  }
+  },
+  partials: [Discord.Partials.Message, Discord.Partials.Reaction]
 });
 
 /*############################################*/
@@ -135,6 +141,19 @@ database_pool.query('SELECT NOW();', (err, res) => {
     logger.info("Bot was removed from a guild : "+guild.id+"("+guild.name+")");
   });
 
+  discordClient.on("guildUpdate", async(oldGuild, newGuild)=>{
+    if(oldGuild.name===newGuild.name)return;
+    //This guild has a new name, we will save it in database
+    database_pool.query("UPDATE servers SET name = $1 WHERE server_id = $2;", [newGuild.name, newGuild.id])
+    .then(async()=>{
+      logger.debug("Saved a new name for guild "+newGuild.id);
+    })
+    .catch((err)=>{
+      logger.error("Error while saving the new name of guild "+newGuild.id+" : "+err);
+    });
+
+  });
+
 /*############################################*/
 /* Adding events */
 /*############################################*/
@@ -160,7 +179,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
 process.on('uncaughtException', (err) => {
     //handleError(undefined, undefined, err);
     if(process.env.BOT_LOG_ERRORS==='true'){
-      logger.error(err);
+      logger.error("Error while executing server code : "+err.message);
     }
 });
 
