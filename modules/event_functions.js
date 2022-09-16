@@ -91,7 +91,7 @@ module.exports = {
       return;
     }
 
-    if(eventNewMessage.channel.type == Discord.ChannelType.DM){return;}//Do nothing if done in PM channel
+    if(eventNewMessage.channel.type == Discord.ChannelType.DM || eventNewMessage.author.bot){return;}//Do nothing if done in PM channel or author is bot
     const CURRENT_GUILD = eventNewMessage.guild;//We save here the guild we're working on
 
     logger.debug("A message was edited in guild "+CURRENT_GUILD.id+", creating a SQL request...");
