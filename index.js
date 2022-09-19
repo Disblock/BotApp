@@ -34,7 +34,7 @@ const discordClient = new Discord.Client({
     Discord.GatewayIntentBits.GuildPresences,
     Discord.GatewayIntentBits.GuildMessages,
     Discord.GatewayIntentBits.GuildMessageReactions,
-    Discord.GatewayIntentBits.GuildMessageTyping,
+    //Discord.GatewayIntentBits.GuildMessageTyping,
     Discord.GatewayIntentBits.DirectMessages,
     Discord.GatewayIntentBits.DirectMessageReactions,
     //Discord.GatewayIntentBits.DirectMessageTyping,
@@ -242,9 +242,10 @@ discordClient.on("roleDelete", async (eventRole) =>{
 });
 
 //A rank is edited
-discordClient.on("roleUpdate", async (eventOldRole, eventNewRole) =>{
+//Disabled : sometimes, when a role is created, this event will be triggered multiple times
+/*discordClient.on("roleUpdate", async (eventOldRole, eventNewRole) =>{
   event_functions.roleUpdate(eventOldRole, eventNewRole, logger, database_pool);
-});
+});*/
 
 //An user is banned from the guild
 discordClient.on("guildBanAdd", async (eventBan) =>{
@@ -279,9 +280,10 @@ discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
 });*/
 
 //A guildMember is typing
-discordClient.on("typingStart", async (typingState) =>{
+//Disabled : This event is always triggered multiple times when a big message is written
+/*discordClient.on("typingStart", async (typingState) =>{
   event_functions.typingStart(typingState, logger, database_pool);
-});
+});*/
 
 /*############################################*/
 /* Starting the bot */
