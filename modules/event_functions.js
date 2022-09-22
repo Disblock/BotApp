@@ -4,6 +4,7 @@
 
 const {NodeVM} = require('vm2');//Sandbox
 const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
+const get_help_embed = require('./help_embed.js');//Return a sandbox when called with object containing shared vars as arg
 const Discord = require('discord.js');
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
@@ -32,6 +33,20 @@ module.exports = {
     const eventType = "event_message_sent";
 
     if(eventMessage.author.bot || eventMessage.channel.type === Discord.ChannelType.DM){return;}//Do nothing if a bot sent the message or sent in DM
+
+    if(eventMessage.mentions.has(eventMessage.client.user)){
+      //The help command. We just send an help message and return.
+      if(eventMessage.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator, true)){
+        //User is admin
+        eventMessage.reply({embeds: [get_help_embed(Discord)]});
+      }else{
+        //User isn't admin
+        eventMessage.react('📨');
+        eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+      }
+      return;
+    }
+
     const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
 
     logger.debug("A message was sent in guild "+CURRENT_GUILD.id+", creating a SQL request...");
