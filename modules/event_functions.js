@@ -34,7 +34,7 @@ module.exports = {
 
     if(eventMessage.author.bot || eventMessage.channel.type === Discord.ChannelType.DM){return;}//Do nothing if a bot sent the message or sent in DM
 
-    if(eventMessage.mentions.has(eventMessage.client.user)){
+    if(eventMessage.mentions.has(eventMessage.client.user, {ignoreRoles:true, ignoreRepliedUser:true, ignoreEveryone:true})){
       //The help command. We just send an help message and return.
       if(eventMessage.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator, true)){
         //User is admin
