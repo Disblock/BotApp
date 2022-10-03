@@ -38,11 +38,15 @@ module.exports = {
       //The help command. We just send an help message and return.
       if(eventMessage.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator, true)){
         //User is admin
-        eventMessage.reply({embeds: [get_help_embed(Discord)]});
+        eventMessage.reply({embeds: [get_help_embed(Discord)]}).catch(()=>{
+          //The bot can't send the message here, so we will DM the user
+          eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+          eventMessage.react('📨');
+        });
       }else{
         //User isn't admin
-        eventMessage.react('📨');
         eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+        eventMessage.react('📨');
       }
       return;
     }
