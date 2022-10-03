@@ -12,5 +12,6 @@ module.exports = (Discord)=>{
   .addFields({name:'Is there any commands ?', value:'Nop, this message is the only command available by default, but you can create your own events or commands on the dashboard !', inline:true})
   .addFields({name:'Disblock\'s dashboard', value:'You can configure Disblock [Here](https://disblock.xyz/panel). Login, and select a server to see the editor ! ', inline:true})
   .addFields({name:'I need help !', value:'No problem, you can check the [docs](https://docs.disblock.xyz), or join the [support server](https://discord.gg/4b6j3UBKWp). Also, be sure to give the right permissions to the bot when creating an action flow !', inline:true})
+  .addFields({name:'How do I get started ?', value:'We have a page in the docs to answer this question ! Just read [this](https://docs.disblock.xyz/disblock/first-steps) and everything should be more clear !', inline:false})
   )
 }
