@@ -196,6 +196,8 @@ module.exports = {
     if(eventOldUser.user.bot){return;}//Do nothing if member is bot
     const CURRENT_GUILD = eventOldUser.guild;//We save here the guild we're working on
 
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.MemberUpdate)){return;}//A bot triggered this event
+
     logger.debug("A member was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
 
     database_pool//Query to database to get code to execute
