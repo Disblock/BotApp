@@ -16,7 +16,15 @@ const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action
 //Function used to check if a bot or an user triggered an event
 async function didBotDidIt(guild, eventType){
   //We check here who edited the role. Bot edited roles should not trigger this
-  const log = await guild.fetchAuditLogs({limit:1, type: eventType});//Store the log entry about the channel creation
+  let log;
+
+  try{
+    log = await guild.fetchAuditLogs({limit:1, type: eventType});//Store the log entry about the channel creation
+  }catch(err){
+    //The bot don't have the permission to check the logs ?...
+    return undefined;//Can't access logs...
+  }
+
   if(!log.entries.first()){
     return undefined;//Logs not found, cancelling...
   }
