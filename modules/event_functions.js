@@ -4,6 +4,7 @@
 
 const {NodeVM} = require('vm2');//Sandbox
 const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
+const get_help_embed = require('./help_embed.js');//Return a sandbox when called with object containing shared vars as arg
 const Discord = require('discord.js');
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
@@ -15,7 +16,15 @@ const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action
 //Function used to check if a bot or an user triggered an event
 async function didBotDidIt(guild, eventType){
   //We check here who edited the role. Bot edited roles should not trigger this
-  const log = await guild.fetchAuditLogs({limit:1, type: eventType});//Store the log entry about the channel creation
+  let log;
+
+  try{
+    log = await guild.fetchAuditLogs({limit:1, type: eventType});//Store the log entry about the channel creation
+  }catch(err){
+    //The bot don't have the permission to check the logs ?...
+    return undefined;//Can't access logs...
+  }
+
   if(!log.entries.first()){
     return undefined;//Logs not found, cancelling...
   }
@@ -32,6 +41,24 @@ module.exports = {
     const eventType = "event_message_sent";
 
     if(eventMessage.author.bot || eventMessage.channel.type === Discord.ChannelType.DM){return;}//Do nothing if a bot sent the message or sent in DM
+
+    if(eventMessage.mentions.has(eventMessage.client.user, {ignoreRoles:true, ignoreRepliedUser:true, ignoreEveryone:true})){
+      //The help command. We just send an help message and return.
+      if(eventMessage.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator, true)){
+        //User is admin
+        eventMessage.reply({embeds: [get_help_embed(Discord)]}).catch(()=>{
+          //The bot can't send the message here, so we will DM the user
+          eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+          eventMessage.react('📨');
+        });
+      }else{
+        //User isn't admin
+        eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+        eventMessage.react('📨');
+      }
+      return;
+    }
+
     const CURRENT_GUILD = eventMessage.guild;//We save here the guild we're working on
 
     logger.debug("A message was sent in guild "+CURRENT_GUILD.id+", creating a SQL request...");
@@ -168,6 +195,8 @@ module.exports = {
 
     if(eventOldUser.user.bot){return;}//Do nothing if member is bot
     const CURRENT_GUILD = eventOldUser.guild;//We save here the guild we're working on
+
+    if(await didBotDidIt(CURRENT_GUILD, Discord.AuditLogEvent.MemberUpdate)){return;}//A bot triggered this event
 
     logger.debug("A member was updated in guild "+CURRENT_GUILD.id+", creating a SQL request...");
 

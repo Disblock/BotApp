@@ -288,5 +288,13 @@ discordClient.on("voiceStateUpdate", async (oldState, newState) =>{
 /*############################################*/
 /* Starting the bot */
 /*############################################*/
+discordClient.login(process.env.TOKEN).then(()=>{
 
-discordClient.login(process.env.TOKEN).then(()=>{logger.info("The Disblock's bot is ready !")});
+  if(process.env.BOT_MOTD != "NONE"){
+    discordClient.user.setActivity({name:process.env.BOT_MOTD, type:Discord.ActivityType.Watching});
+  }
+
+  logger.info("The Disblock's bot is ready !")
+}).catch((err)=>{
+  logger.error("Failed to start Disblock bot : "+err);
+});
