@@ -4,7 +4,7 @@
 
 const {NodeVM} = require('vm2');//Sandbox
 const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
-const get_help_embed = require('./help_embed.js');//Return a sandbox when called with object containing shared vars as arg
+const get_help_embed = require('./help_embed.js');//Return an embed that explain how to use the bot
 const Discord = require('discord.js');
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
@@ -50,14 +50,14 @@ module.exports = {
       //The help command. We just send an help message and return.
       if(eventMessage.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator, true)){
         //User is admin
-        eventMessage.reply({embeds: [get_help_embed(Discord)]}).catch(()=>{
+        eventMessage.reply({embeds: [get_help_embed()]}).catch(()=>{
           //The bot can't send the message here, so we will DM the user
-          eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+          eventMessage.author.send({embeds: [get_help_embed()]});
           eventMessage.react('📨');
         });
       }else{
         //User isn't admin
-        eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+        eventMessage.author.send({embeds: [get_help_embed()]});
         eventMessage.react('📨');
       }
       return;

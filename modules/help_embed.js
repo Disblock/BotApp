@@ -1,8 +1,10 @@
 'use-strict';
+const {EmbedBuilder} = require('discord.js');
+
 /*This module is used to get the Embed message when someone send @Disblock.*/
-module.exports = (Discord)=>{
+module.exports = ()=>{
   return (
-  new Discord.EmbedBuilder()
+  new EmbedBuilder()
   .setTitle('Disblock ~ Help')
   .setDescription('Thanks for adding me ! This message will explain how to get started with Disblock.')
   .setColor(('#2E86AB'))
