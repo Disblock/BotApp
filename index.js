@@ -6,6 +6,11 @@ const init_logs = require('./modules/init_logs.js');//Show a message in logs fil
 const event_functions = require('./modules/event_functions.js');//Store the executed functions on events
 
 /*############################################*/
+/* Slash commands modules */
+/*############################################*/
+const slashCommandHelp = require('./commands/help.js');//Help command
+
+/*############################################*/
 /* Imported modules */
 /*############################################*/
 const Discord = require('discord.js');
@@ -17,7 +22,7 @@ require('winston-daily-rotate-file');//Daily rotating files
 /*############################################*/
 /* Discord Client creation */
 /*############################################*/
-const discordClient = new Discord.Client({
+let discordClient = new Discord.Client({
   shards: 'auto',
   restRequestTimeout: 1000,
   restGlobalRateLimit: 50,
@@ -54,6 +59,23 @@ const discordClient = new Discord.Client({
   },
   partials: [Discord.Partials.Message, Discord.Partials.Reaction]
 });
+
+discordClient.commands = new Discord.Collection();
+
+//Adding slash commands to client
+discordClient.commands.set(slashCommandHelp.command.name, slashCommandHelp);
+
+//Sending these commands to Discord
+const rest = new Discord.REST({ version: '10' }).setToken(process.env.TOKEN);
+let commands = [];
+discordClient.commands.forEach((item, i) => {
+  commands.push(item.command);
+});
+
+rest.put(
+	Discord.Routes.applicationCommands(process.env.CLIENT_ID),
+	{ body: commands }
+);
 
 /*############################################*/
 /* Morgan & winston modules ( Logging ) */
@@ -152,6 +174,17 @@ database_pool.query('SELECT NOW();', (err, res) => {
       logger.error("Error while saving the new name of guild "+newGuild.id+" : "+err);
     });
 
+  });
+
+  discordClient.on("interactionCreate", async(interaction) => {//See https://discordjs.guide/creating-your-bot/command-handling.html#executing-commands
+    if (!interaction.isChatInputCommand()) return;//Do nothing here if not a chat command
+    const command = interaction.client.commands.get(interaction.commandName);
+    if(!command)return;//Command not found.
+
+    command.execute(interaction)
+    .catch((err)=>{
+      logger.error("Error while executing "+interaction.commandName+" : "+err);
+    });
   });
 
 /*############################################*/

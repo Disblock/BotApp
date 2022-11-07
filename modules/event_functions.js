@@ -4,11 +4,15 @@
 
 const {NodeVM} = require('vm2');//Sandbox
 const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
-const get_help_embed = require('./help_embed.js');//Return a sandbox when called with object containing shared vars as arg
+const get_help_embed = require('./help_embed.js');//Return an embed that explain how to use the bot
 const Discord = require('discord.js');
 
 //Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
-const globalVars = "let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {}; /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);} function mathRandomInt(min, max){return Math.floor(Math.random() * (max - min + 1) + min)}";
+const globalVars = `let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {};
+  /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);}
+  function mathRandomInt(min, max){return Math.floor(Math.random() * (max - min + 1) + min)};
+  const sleep = ms => new Promise(r => {if(ms>5000){throw('Timeout too long !')}setTimeout(r, ms)});
+  function strToInt(str){if(/^[0-9]{1,16}$/.test(str)){return(parseInt(str));}else{return(-1);}}`;
 
 //SQL request to get code to execute, $n are defined when executing this request
 const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
@@ -46,14 +50,14 @@ module.exports = {
       //The help command. We just send an help message and return.
       if(eventMessage.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator, true)){
         //User is admin
-        eventMessage.reply({embeds: [get_help_embed(Discord)]}).catch(()=>{
+        eventMessage.reply({embeds: [get_help_embed()]}).catch(()=>{
           //The bot can't send the message here, so we will DM the user
-          eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+          eventMessage.author.send({embeds: [get_help_embed()]});
           eventMessage.react('📨');
         });
       }else{
         //User isn't admin
-        eventMessage.author.send({embeds: [get_help_embed(Discord)]});
+        eventMessage.author.send({embeds: [get_help_embed()]});
         eventMessage.react('📨');
       }
       return;
@@ -540,7 +544,7 @@ module.exports = {
     const CURRENT_GUILD = eventMessage.guild;
     const eventUser = await CURRENT_GUILD.members.fetch(eventUser2);
 
-    //Only real users should trigger events
+    //event user is the user who reacted, not the one removing this reaction
     if(eventUser.user.bot){return;}
 
     let eventType = "event_reaction_removed";
