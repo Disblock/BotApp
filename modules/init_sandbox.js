@@ -1,7 +1,6 @@
 'use strict';
 const {NodeVM} = require('vm2');//Sandbox
 
-//This will show the name "Disblock" in the logs
 module.exports = {
 
   //Get the sandbox object for a vm and return the created vm
