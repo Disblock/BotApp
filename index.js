@@ -9,6 +9,7 @@ const event_functions = require('./modules/event_functions.js');//Store the exec
 /* Slash commands modules */
 /*############################################*/
 const slashCommandHelp = require('./commands/help.js');//Help command
+const slashCommandReload = require('./commands/reloadCommands.js');//Help command
 
 /*############################################*/
 /* Imported modules */
@@ -64,6 +65,7 @@ discordClient.commands = new Discord.Collection();
 
 //Adding slash commands to client
 discordClient.commands.set(slashCommandHelp.command.name, slashCommandHelp);
+discordClient.commands.set(slashCommandReload.command.name, slashCommandReload);
 
 //Sending these commands to Discord
 const rest = new Discord.REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -179,12 +181,30 @@ database_pool.query('SELECT NOW();', (err, res) => {
   discordClient.on("interactionCreate", async(interaction) => {//See https://discordjs.guide/creating-your-bot/command-handling.html#executing-commands
     if (!interaction.isChatInputCommand()) return;//Do nothing here if not a chat command
     const command = interaction.client.commands.get(interaction.commandName);
-    if(!command)return;//Command not found.
 
-    command.execute(interaction)
-    .catch((err)=>{
-      logger.error("Error while executing "+interaction.commandName+" : "+err);
-    });
+    if(command){
+      //That's a global command for Disblock
+      if(interaction.commandName === slashCommandReload.command.name){//Commands that need special args are managed here
+        //Reload commands for a guild
+        command.execute(interaction, database_pool, logger)
+        .catch((err)=>{
+          logger.error("Error while executing global command "+interaction.commandName+" : "+err);
+        });
+      }else{
+        //Classic commands, no special args needed
+        command.execute(interaction)
+        .catch((err)=>{
+          logger.error("Error while executing global command "+interaction.commandName+" : "+err);
+        });
+      }
+
+    }else{
+      //Server command
+      logger.debug("Custom slash command "+interaction.commandName+" ran in server "+interaction.guild.id);
+      //TODO : run code for these commands
+    }
+
+
   });
 
 /*############################################*/
