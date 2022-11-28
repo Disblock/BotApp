@@ -200,8 +200,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
 
     }else{
       //Server command
-      logger.debug("Custom slash command "+interaction.commandName+" ran in server "+interaction.guild.id);
-      //TODO : run code for these commands
+      event_functions.interactionCreate(interaction, logger, database_pool);
     }
 
 
