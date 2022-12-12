@@ -41,6 +41,39 @@ async function didBotDidIt(guild, eventType){
 
 module.exports = {
 
+  interactionCreate: async(interaction, logger, database_pool)=>{
+    const CURRENT_GUILD = interaction.guild;//We save here the guild we're working on
+
+    logger.debug("Custom slash command "+interaction.commandName+" ran in server "+interaction.guild.id);
+
+    database_pool//Query to database to get code to execute
+    .query("SELECT code, ephemeral FROM commands WHERE server_id = $1 AND name = $2 AND active = TRUE LIMIT 1;", [CURRENT_GUILD.id, interaction.commandName])
+    .then(async (res)=>{
+
+      if(res.rows.length!==1){
+        interaction.reply({
+          content: ":stop_sign: Sorry, but there was a problem while running your slash command...\
+            \nTry to reload the editor, and use `/reloadcommands`\
+            \nIf this problem persist, please, report this on the support server",
+          ephemeral: true
+        });
+        return;
+      }
+
+      logger.debug("Got SQL result for "+CURRENT_GUILD.id+", we found a command to run !");
+
+      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, interaction:interaction});//A sandbox is created in module init_sandbox.js
+
+      //We will delay the answer and start the sandbox :
+      await interaction.deferReply({ ephemeral: res.rows[0].ephemeral });
+      vm.run(globalVars+"async function a(){"+res.rows[0].code+"};a();");
+
+    })
+    .catch(err =>{//Got an error while getting data from database or while executing code
+      //handleError(CURRENT_GUILD.id, eventType, err);
+    });
+  },
+
   messageCreate: async(eventMessage, logger, database_pool)=>{
     const eventType = "event_message_sent";
 
