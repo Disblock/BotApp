@@ -3,17 +3,10 @@
 /* Functions executed on guilds events are defined here */
 
 const {NodeVM} = require('vm2');//Sandbox
-const get_sandbox = require('./init_sandbox.js').getSandbox;//Return a sandbox when called with object containing shared vars as arg
+const run_code_in_sandbox = require('./sandbox.js').runCodeInSandbox;//Run code in a sandbox
 const get_help_embed = require('./help_embed.js');//Return an embed that explain how to use the bot
 const data_storage_functions = require('./data_storage_functions.js');//Functions used to manage data saved in database
 const Discord = require('discord.js');
-
-//Alls these var must be declared when executing generated code. These var are created at code generation ( Blockly ) Functions used by blocks can also be added here
-const globalVars = `let embedMessage,createdTextChannel,createdVoiceChannel,sentMessage,createdThreadOnMessage,createdRank;let temporaryStorage = {};
-  /*Functions*/ function colourRandom() {let num = Math.floor(Math.random() * Math.pow(2, 24));return '#' + ('00000' + num.toString(16)).substr(-6);}
-  function mathRandomInt(min, max){return Math.floor(Math.random() * (max - min + 1) + min)};
-  const sleep = ms => new Promise(r => {if(ms>5000){throw('Timeout too long !')}setTimeout(r, ms)});
-  function strToInt(str){if(/^[0-9]{1,16}$/.test(str)){return(parseInt(str));}else{return(-1);}}`;
 
 //SQL request to get code to execute, $n are defined when executing this request
 const sqlRequest = "SELECT code FROM server_code WHERE server_id = $1 AND action_type = $2 AND active = TRUE;";
@@ -39,21 +32,6 @@ async function didBotDidIt(guild, eventType){
   return false;//An user did it
 }
 
-//Function that will add the object that allow us to manage stored data in database to sandbox
-function addDataStorageObject(vm, database_pool, logger, serverId){
-  let dataStorage = {
-    saveValue: async function(storageName, key, value){//Pool, logger, and server_id shouldn't be editable in sandbox.
-      data_storage_functions.saveValueInStorage(database_pool, logger, serverId, storageName, key, value);
-    },
-    getValue: async function(storageName, key){
-      return await data_storage_functions.getValueInStorage(database_pool, logger, serverId, storageName, key);
-    }
-  };
-
-  vm.freeze(dataStorage, 'dataStorage');
-}
-
-
 module.exports = {
 
   interactionCreate: async(interaction, logger, database_pool)=>{
@@ -76,12 +54,10 @@ module.exports = {
       }
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", we found a command to run !");
-
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, interaction:interaction});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
       //We will delay the answer and start the sandbox :
       await interaction.deferReply({ ephemeral: res.rows[0].ephemeral });
-      vm.run(globalVars+"async function a(){"+res.rows[0].code+"};a();");
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, interaction:interaction},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -121,11 +97,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage}, database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -152,11 +124,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage}, database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -183,11 +151,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldMessage:eventOldMessage, eventNewMessage:eventNewMessage});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldMessage:eventOldMessage, eventNewMessage:eventNewMessage},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -209,11 +174,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -235,11 +197,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -263,11 +222,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldUser:eventOldUser, eventNewUser:eventNewUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldUser:eventOldUser, eventNewUser:eventNewUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -305,11 +261,9 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel, eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel,
+        eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -345,11 +299,9 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel, eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel,
+        eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -397,13 +349,10 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord,
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord,
         eventOldVoiceChannel:eventOldVoiceChannel, eventNewVoiceChannel:eventNewVoiceChannel, eventOldTextChannel:eventOldTextChannel,
-        eventNewTextChannel:eventNewTextChannel, eventOldThreadChannel:eventOldThreadChannel, eventNewThreadChannel:eventNewThreadChannel});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+        eventNewTextChannel:eventNewTextChannel, eventOldThreadChannel:eventOldThreadChannel, eventNewThreadChannel:eventNewThreadChannel},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -427,11 +376,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -455,11 +401,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -483,11 +426,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldRole:eventOldRole, eventNewRole:eventNewRole});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldRole:eventOldRole, eventNewRole:eventNewRole},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -510,11 +450,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -536,11 +473,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -578,11 +512,9 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction, eventMessage:eventMessage, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction,
+        eventMessage:eventMessage, eventUser:eventUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -620,11 +552,9 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction, eventMessage:eventMessage, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction,
+        eventMessage:eventMessage, eventUser:eventUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -651,11 +581,9 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldVoiceChannel:eventOldVoiceChannel, eventNewVoiceChannel:eventNewVoiceChannel, eventUser:eventUser});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldVoiceChannel:eventOldVoiceChannel,
+        eventNewVoiceChannel:eventNewVoiceChannel, eventUser:eventUser},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -683,11 +611,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      const vm = get_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser, eventTextChannel:eventTextChannel});//A sandbox is created in module init_sandbox.js
-      addDataStorageObject(vm, database_pool, logger, CURRENT_GUILD.id);
-      for(let i=0; i<res.rows.length; i++){//For each row in database ( for each Event block in workspace )
-        vm.run(globalVars+"async function a(){"+res.rows[i].code+"};a();");
-      }
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser, eventTextChannel:eventTextChannel},
+        database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
