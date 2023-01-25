@@ -19,9 +19,9 @@ module.exports = {
     try{
       const row = (await database_pool.query("SELECT d.data, s.storage_is_int FROM data_storage s INNER JOIN stored_data d ON s.storage_id=d.storage_id WHERE s.server_id = $1 AND s.storage_name = $2 AND d.data_key = $3;",
         [serverId, storageName, key])).rows[0];
-      return row;
+      return (row ? row.data : null);
     }catch(err){
-      logger.error("Error while saving data in data storage for server "+serverId+" : "+err);
+      logger.error("Error while getting data from data storage for server "+serverId+" : "+err);
       return undefined;
     }
   }
