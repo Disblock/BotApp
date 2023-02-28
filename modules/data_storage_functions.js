@@ -6,7 +6,7 @@ module.exports = {
 
   saveValueInStorage: async function(database_pool, logger, serverId, storageName, key, value){
     /* Save a new value in a server's storage */
-    database_pool.query("INSERT INTO stored_data (storage_id, data_key, data) VALUES ( (SELECT storage_id FROM data_storage WHERE server_id = $1 AND storage_name = $2),  $3, $4);",
+    database_pool.query("SELECT f_insert_or_update_data($1, $2, $3, $4)",
       [serverId, storageName, key, value.toString()])
     .catch((err)=>{
       logger.error("Error while saving data in data storage for server "+serverId+" : "+err);
