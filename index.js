@@ -153,7 +153,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
 //These events are only used by the bot, users can't use these
 
   discordClient.on("guildCreate", async(guild)=>{
-    database_pool.query("INSERT INTO servers (server_id, name) VALUES ($1, $2) ON CONFLICT DO NOTHING;", [guild.id, guild.name])
+    database_pool.query("INSERT INTO servers (server_id) VALUES ($1) ON CONFLICT DO NOTHING;", [guild.id])
     .then(()=>{
       logger.info("Bot was added in a new server : "+guild.id+"("+guild.name+")");
       logger.debug("Successfully added a new server to database !");
@@ -163,19 +163,6 @@ database_pool.query('SELECT NOW();', (err, res) => {
 
   discordClient.on("guildDelete", async(guild)=>{
     logger.info("Bot was removed from a guild : "+guild.id+"("+guild.name+")");
-  });
-
-  discordClient.on("guildUpdate", async(oldGuild, newGuild)=>{
-    if(oldGuild.name===newGuild.name)return;
-    //This guild has a new name, we will save it in database
-    database_pool.query("UPDATE servers SET name = $1 WHERE server_id = $2;", [newGuild.name, newGuild.id])
-    .then(async()=>{
-      logger.debug("Saved a new name for guild "+newGuild.id);
-    })
-    .catch((err)=>{
-      logger.error("Error while saving the new name of guild "+newGuild.id+" : "+err);
-    });
-
   });
 
   discordClient.on("interactionCreate", async(interaction) => {//See https://discordjs.guide/creating-your-bot/command-handling.html#executing-commands
