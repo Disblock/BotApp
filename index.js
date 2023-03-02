@@ -37,7 +37,7 @@ let discordClient = new Discord.Client({
     Discord.GatewayIntentBits.GuildWebhooks,
     Discord.GatewayIntentBits.GuildInvites,
     Discord.GatewayIntentBits.GuildVoiceStates,
-    Discord.GatewayIntentBits.GuildPresences,
+    //Discord.GatewayIntentBits.GuildPresences,
     Discord.GatewayIntentBits.GuildMessages,
     Discord.GatewayIntentBits.GuildMessageReactions,
     //Discord.GatewayIntentBits.GuildMessageTyping,
