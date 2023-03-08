@@ -20,7 +20,7 @@ module.exports = {
       const row = (await database_pool.query("SELECT d.data, s.storage_is_int FROM data_storage s INNER JOIN stored_data d ON s.storage_id=d.storage_id WHERE s.server_id = $1 AND s.storage_name = $2 AND d.data_key = $3;",
         [serverId, storageName, key])).rows[0];
 
-      if(row.data){
+      if(row){
         return row.data;
       }else if(storageName.startsWith('I')){
         return -1;
