@@ -19,10 +19,28 @@ module.exports = {
     try{
       const row = (await database_pool.query("SELECT d.data, s.storage_is_int FROM data_storage s INNER JOIN stored_data d ON s.storage_id=d.storage_id WHERE s.server_id = $1 AND s.storage_name = $2 AND d.data_key = $3;",
         [serverId, storageName, key])).rows[0];
-      return (row ? row.data : null);
+
+      if(row.data){
+        return row.data;
+      }else if(storageName.startsWith('I')){
+        return -1;
+      }else if(storageName.startsWith('S')){
+        return 'undefined';
+      }else{
+        throw('Error : Invalid storage name "'+storageName+'" for server '+serverId);
+      }
+
     }catch(err){
       logger.error("Error while getting data from data storage for server "+serverId+" : "+err);
-      return undefined;
+
+      if(storageName.startsWith('I')){
+        return -1;
+      }else if(storageName.startsWith('S')){
+        return 'undefined';
+      }else{
+        return null;//May cause errors in workspaces, so using this can be considered a bug
+      }
+
     }
   }
 
