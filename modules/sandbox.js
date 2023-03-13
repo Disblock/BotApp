@@ -17,6 +17,9 @@ function addDataStorageObject(vm, database_pool, logger, serverId){
     },
     getValue: async function(storageName, key){
       return await data_storage_functions.getValueInStorage(database_pool, logger, serverId, storageName, key);
+    },
+    delValue: async function(storageName, key){
+      return await data_storage_functions.deleteValueInStorage(database_pool, logger, serverId, storageName, key);
     }
   };
 
