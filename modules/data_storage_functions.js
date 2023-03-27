@@ -8,7 +8,7 @@ module.exports = {
     /* Save a new value in a server's storage */
 
     //Key and value must be defined
-    if(!key || key=='' || !value || value=='')return;
+    if(!key || key=='' || value===undefined || value==='')return;
 
     //We will check that key and valud aren't bigger than 32 or 256 char
     if(key.length > 32){
