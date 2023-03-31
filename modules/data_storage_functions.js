@@ -14,8 +14,9 @@ module.exports = {
     if(key.length > 32){
       key = key.slice(0, 32);
     }
-    if(value.toString().length > 255){
-      value = value.toString().slice(0, 255);
+    if(value.toString().length > 1024){
+      logger.debug("Can't save data in data storage for server "+serverId+" : value length exceed limit");
+      return;
     }
 
     database_pool.query("SELECT f_insert_or_update_data($1, $2, $3, $4)",
