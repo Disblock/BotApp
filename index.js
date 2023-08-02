@@ -17,7 +17,6 @@ const slashCommandReload = require('./commands/reloadCommands.js');//Help comman
 const Discord = require('discord.js');
 const pg = require('pg');//Postgresql
 const winston = require('winston');//Used to save logs
-const {NodeVM} = require('vm2');//Sandbox
 require('winston-daily-rotate-file');//Daily rotating files
 
 /*############################################*/

@@ -18,8 +18,8 @@
   "homepage": "https://github.com/Disblock/Disblock-Discord-Bot#readme",
   "dependencies": {
     "discord.js": "^14.2.0",
+    "isolated-vm": "^4.5.0",
     "pg": "^8.7.3",
-    "vm2": "^3.9.18",
     "winston": "^3.6.0",
     "winston-daily-rotate-file": "^4.6.1"
   },

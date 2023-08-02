@@ -2,7 +2,6 @@
 
 /* Functions executed on guilds events are defined here */
 
-const {NodeVM} = require('vm2');//Sandbox
 const run_code_in_sandbox = require('./sandbox.js').runCodeInSandbox;//Run code in a sandbox
 const get_help_embed = require('./help_embed.js');//Return an embed that explain how to use the bot
 const data_storage_functions = require('./data_storage_functions.js');//Functions used to manage data saved in database
