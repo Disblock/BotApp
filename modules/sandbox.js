@@ -44,7 +44,7 @@ module.exports = {
       jail.setSync(key, new ivm.Reference(args[key], {unsafeInherit:false}));//Adding old args. Here, only properties are kept. Methods aren't passed to isolate
     };
 
-    initSandbox(jail, database_pool, logger, args.CURRENT_GUILD.id);
+    initSandbox(jail, args, database_pool, logger, args.CURRENT_GUILD.id);
 
     for(let i=0; i<sqlRows.length; i++){//For each row ( event block ), we execute the code
       const code = await isolate.compileScript(globalVars+sqlRows[i].code);
