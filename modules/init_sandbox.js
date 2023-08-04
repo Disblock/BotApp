@@ -32,9 +32,19 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
   }
   `;
 
+  let storedVariables = [];//Will hold variables and objects that we can't send in sandbox. Indexes are used to find something here, and are passed to sandbox.
+  let sandboxVariables = {};//Object sent in sandbox, that will hold storedVariables indexes and properties of objects. Methods aren't accessible within sandbox, and are called using indexes and transit functions
+  for(let key in args){
+    sandboxVariables[key] = args[key];
+    sandboxVariables[key].sandboxID = storedVariables.length;//sandboxID is used to refer to this object when using transit functions
+    storedVariables.push(sandboxVariables[key]);
+  };
+
   // This makes the global object available in the context as `global`. We use `derefInto()` here
   // because otherwise `global` would actually be a Reference{} object in the new isolate.
   sandboxContext.setSync('global', sandboxContext.derefInto());
+
+  sandboxContext.setSync('variables', new ivm.Reference(sandboxVariables));//Adding event args. Here, only properties are kept. Methods aren't passed to isolate
 
   sandboxContext.setSync('functions', new ivm.Reference({}));//Will hold functions to interact with Discord servers
   let functions = sandboxContext.getSync('functions');

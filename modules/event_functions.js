@@ -55,7 +55,7 @@ module.exports = {
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", we found a command to run !");
       //We will delay the answer and start the sandbox :
       await interaction.deferReply({ ephemeral: res.rows[0].ephemeral });
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, interaction:interaction},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  interaction:interaction},
         database_pool, logger, res.rows);
 
     })
@@ -96,7 +96,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage}, database_pool, logger, res.rows);
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventMessage:eventMessage}, database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -123,7 +123,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventMessage:eventMessage}, database_pool, logger, res.rows);
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventMessage:eventMessage}, database_pool, logger, res.rows);
 
     })
     .catch(err =>{//Got an error while getting data from database or while executing code
@@ -150,7 +150,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldMessage:eventOldMessage, eventNewMessage:eventNewMessage},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventOldMessage:eventOldMessage, eventNewMessage:eventNewMessage},
         database_pool, logger, res.rows);
 
     })
@@ -173,7 +173,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventUser:eventUser},
         database_pool, logger, res.rows);
 
     })
@@ -196,7 +196,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventUser:eventUser},
         database_pool, logger, res.rows);
 
     })
@@ -221,7 +221,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldUser:eventOldUser, eventNewUser:eventNewUser},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventOldUser:eventOldUser, eventNewUser:eventNewUser},
         database_pool, logger, res.rows);
 
     })
@@ -260,7 +260,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel,
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventVoiceChannel:eventVoiceChannel,
         eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel},
         database_pool, logger, res.rows);
 
@@ -298,7 +298,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventVoiceChannel:eventVoiceChannel,
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventVoiceChannel:eventVoiceChannel,
         eventTextChannel:eventTextChannel, eventThreadChannel:eventThreadChannel},
         database_pool, logger, res.rows);
 
@@ -348,7 +348,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord,
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,
         eventOldVoiceChannel:eventOldVoiceChannel, eventNewVoiceChannel:eventNewVoiceChannel, eventOldTextChannel:eventOldTextChannel,
         eventNewTextChannel:eventNewTextChannel, eventOldThreadChannel:eventOldThreadChannel, eventNewThreadChannel:eventNewThreadChannel},
         database_pool, logger, res.rows);
@@ -375,7 +375,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventRole:eventRole},
         database_pool, logger, res.rows);
 
     })
@@ -400,7 +400,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventRole:eventRole},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventRole:eventRole},
         database_pool, logger, res.rows);
 
     })
@@ -425,7 +425,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldRole:eventOldRole, eventNewRole:eventNewRole},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventOldRole:eventOldRole, eventNewRole:eventNewRole},
         database_pool, logger, res.rows);
 
     })
@@ -449,7 +449,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventUser:eventUser},
         database_pool, logger, res.rows);
 
     })
@@ -472,7 +472,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventUser:eventUser},
         database_pool, logger, res.rows);
 
     })
@@ -511,7 +511,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction,
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventReaction:eventReaction,
         eventMessage:eventMessage, eventUser:eventUser},
         database_pool, logger, res.rows);
 
@@ -551,7 +551,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventReaction:eventReaction,
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventReaction:eventReaction,
         eventMessage:eventMessage, eventUser:eventUser},
         database_pool, logger, res.rows);
 
@@ -580,7 +580,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventOldVoiceChannel:eventOldVoiceChannel,
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventOldVoiceChannel:eventOldVoiceChannel,
         eventNewVoiceChannel:eventNewVoiceChannel, eventUser:eventUser},
         database_pool, logger, res.rows);
 
@@ -610,7 +610,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", codes to execute : "+res.rows.length);
 
-      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, eventUser:eventUser, eventTextChannel:eventTextChannel},
+      run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD,  eventUser:eventUser, eventTextChannel:eventTextChannel},
         database_pool, logger, res.rows);
 
     })

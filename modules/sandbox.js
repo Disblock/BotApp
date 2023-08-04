@@ -33,10 +33,6 @@ module.exports = {
     const context = await isolate.createContext();
     const jail = context.global;//Will hold variables and functions required in the isolate
 
-    for(let key in args){
-      jail.setSync(key, new ivm.Reference(args[key], {unsafeInherit:false}));//Adding old args. Here, only properties are kept. Methods aren't passed to isolate
-    };
-
     const initScript = initSandbox(jail, args, database_pool, logger, args.CURRENT_GUILD.id);
 
     for(let i=0; i<sqlRows.length; i++){//For each row ( event block ), we execute the code
