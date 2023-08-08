@@ -36,7 +36,7 @@ module.exports = {
     const initScript = initSandbox(jail, args, database_pool, logger, args.CURRENT_GUILD.id);
 
     for(let i=0; i<sqlRows.length; i++){//For each row ( event block ), we execute the code
-      const code = await isolate.compileScript(initScript+sqlRows[i].code);
+      const code = await isolate.compileScript(initScript+"async function a(){"+sqlRows[i].code+"};a();");
       await code.run(context).catch(err => {
         logger.error("Error in sandbox : "+err);
       });

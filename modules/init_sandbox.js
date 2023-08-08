@@ -57,7 +57,11 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
   let messagesFunctions = functions.getSync('messages');
 
   messagesFunctions.setSync('reply', new ivm.Reference(async(message, text)=>{
-    args.eventMessage.reply(text);
+    const sentMessage = await storedVariables[message].reply(text);
+
+    sentMessage.sandboxID = storedVariables.length;//Position of the new variable in the list of saved variables, used to refer to this var within the sandbox
+    storedVariables.push(sentMessage);//We can now add the sentMessage to the variables list
+    return new ivm.Reference(sentMessage);
   }));
 
   return initScript;
