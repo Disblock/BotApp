@@ -30,6 +30,10 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
           return (-1);
       }
   }
+
+  /*Let's copy References to make them usable in isolate*/
+  functions = functions.copySync();
+  functions['messages'] = functions.messages.copySync();
   `;
 
   let storedVariables = [];//Will hold variables and objects that we can't send in sandbox. Indexes are used to find something here, and are passed to sandbox.
@@ -44,7 +48,7 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
   // because otherwise `global` would actually be a Reference{} object in the new isolate.
   sandboxContext.setSync('global', sandboxContext.derefInto());
 
-  sandboxContext.setSync('variables', new ivm.Reference(sandboxVariables));//Adding event args. Here, only properties are kept. Methods aren't passed to isolate
+  sandboxContext.setSync('variables', new ivm.ExternalCopy(sandboxVariables).copyInto());//Adding event args. Here, only properties are kept. Methods aren't passed to isolate
 
   sandboxContext.setSync('functions', new ivm.Reference({}));//Will hold functions to interact with Discord servers
   let functions = sandboxContext.getSync('functions');
