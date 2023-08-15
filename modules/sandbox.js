@@ -37,7 +37,7 @@ module.exports = {
 
     for(let i=0; i<sqlRows.length; i++){//For each row ( event block ), we execute the code
       const code = await isolate.compileScript(initScript+"async function a(){"+sqlRows[i].code+"};a();");
-      await code.run(context).catch(err => {
+      await code.run(context, {release:true, copy:true}).catch(err => {
         logger.error("Error in sandbox : "+err);
       });
     }

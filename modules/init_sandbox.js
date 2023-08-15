@@ -68,5 +68,17 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
     return new ivm.Reference(sentMessage);
   }));
 
+  messagesFunctions.setSync('delete', new ivm.Reference(async(message, text)=>{
+    storedVariables[message].delete();
+  }));
+
+  messagesFunctions.setSync('sendInChannel', new ivm.Reference(async(channel, text)=>{
+    const sentMessage = await storedVariables[channel].send(text);
+
+    sentMessage.sandboxID = storedVariables.length;
+    storedVariables.push(sentMessage);
+    return new ivm.Reference(sentMessage);
+  }));
+
   return initScript;
 }
