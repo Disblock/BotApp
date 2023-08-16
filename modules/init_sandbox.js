@@ -61,7 +61,7 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
   let messagesFunctions = functions.getSync('messages');
 
   messagesFunctions.setSync('reply', new ivm.Reference(async(message, text)=>{
-    const sentMessage = await storedVariables[message].reply(text);
+    const sentMessage = await storedVariables[message].reply(text.replaceAll('<br>', '\\n'));
 
     sentMessage.sandboxID = storedVariables.length;//Position of the new variable in the list of saved variables, used to refer to this var within the sandbox
     storedVariables.push(sentMessage);//We can now add the sentMessage to the variables list
@@ -73,12 +73,71 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
   }));
 
   messagesFunctions.setSync('sendInChannel', new ivm.Reference(async(channel, text)=>{
-    const sentMessage = await storedVariables[channel].send(text);
+    const sentMessage = await storedVariables[channel].send(text.replaceAll('<br>', '\\n'));
 
     sentMessage.sandboxID = storedVariables.length;
     storedVariables.push(sentMessage);
     return new ivm.Reference(sentMessage);
   }));
+
+  messagesFunctions.setSync('bulkDelete', new ivm.Reference(async(channel, qty)=>{
+    storedVariables[channel].bulkDelete(qty);
+  }));
+
+  messagesFunctions.setSync('startThread', new ivm.Reference(async(message, name)=>{
+    const createdThreadOnMessage = await storedVariables[message].startThread({name: name});
+
+    createdThreadOnMessage.sandboxID = storedVariables.length;
+    storedVariables.push(createdThreadOnMessage);
+    return new ivm.Reference(createdThreadOnMessage);
+  }));
+
+  messagesFunctions.setSync('pin', new ivm.Reference(async(message)=>{
+    storedVariables[message].pin();
+  }));
+
+  messagesFunctions.setSync('unpin', new ivm.Reference(async(message)=>{
+    storedVariables[message].unpin();
+  }));
+
+  messagesFunctions.setSync('doesMentionEveryone', new ivm.Reference(async(message)=>{
+    return storedVariables[message].mentions.everyone;//No need to use ivm.Reference, as it's a primitive value
+  }));
+
+  messagesFunctions.setSync('doesMentionUser', new ivm.Reference(async(message)=>{
+    return storedVariables[message].mentions.members.size>0;
+  }));
+
+  messagesFunctions.setSync('doesMentionChannel', new ivm.Reference(async(message)=>{
+    return storedVariables[message].mentions.channels.size>0;
+  }));
+
+  messagesFunctions.setSync('getUserMention', new ivm.Reference(async(message, index)=>{
+    const numberOfMentions = storedVariables[message].mentions.members.size;
+    const user = await storedVariables[message].mentions.members.at((index-1)%numberOfMentions);
+
+    user.sandboxID = storedVariables.length;
+    storedVariables.push(user);
+    return new ivm.Reference(user);
+  }));
+
+  messagesFunctions.setSync('getChannelMention', new ivm.Reference(async(message, index)=>{
+    const numberOfMentions = storedVariables[message].mentions.channels.size;
+    const channel = await storedVariables[message].mentions.channels.at((index-1)%numberOfMentions);
+
+    channel.sandboxID = storedVariables.length;
+    storedVariables.push(channel);
+    return new ivm.Reference(channel);
+  }));
+
+  messagesFunctions.setSync('getNumberOfUserMentions', new ivm.Reference(async(message)=>{
+    return storedVariables[message].mentions.members.size;
+  }));
+
+  messagesFunctions.setSync('getNumberOfChannelMentions', new ivm.Reference(async(message)=>{
+    return storedVariables[message].mentions.channels.size;
+  }));
+
 
   return initScript;
 }
