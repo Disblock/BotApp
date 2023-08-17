@@ -138,6 +138,21 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
     return storedVariables[message].mentions.channels.size;
   }));
 
+  messagesFunctions.setSync('getMember', new ivm.Reference(async(message)=>{
+    const user = storedVariables[message].member;
+
+    user.sandboxID = storedVariables.length;
+    storedVariables.push(user);
+    return new ivm.Reference(user);
+  }));
+
+  messagesFunctions.setSync('getChannel', new ivm.Reference(async(message)=>{
+    const channel = storedVariables[message].channel;
+
+    channel.sandboxID = storedVariables.length;
+    storedVariables.push(channel);
+    return new ivm.Reference(channel);
+  }));
 
   return initScript;
 }
