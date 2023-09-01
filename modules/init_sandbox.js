@@ -154,5 +154,16 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
     return new ivm.Reference(channel);
   }));
 
+  // *-----------------*
+  // USERS
+  // *---------------- *
+  functions.setSync('users', new ivm.Reference({}));
+  let usersFunctions = functions.getSync('users');
+
+  usersFunctions.setSync('ban', new ivm.Reference(async(user, reason)=>{
+    storedVariables[user].ban({days:0, reason:reason?reason:'undefined'});
+  }));
+
+
   return initScript;
 }
