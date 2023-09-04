@@ -164,6 +164,11 @@ module.exports = function(sandboxContext, args, database_pool, logger, serverId)
     storedVariables[user].ban({days:0, reason:reason?reason:'undefined'});
   }));
 
+  usersFunctions.setSync('unban', new ivm.Reference(async(userID, reason)=>{
+    //Yes, MUST be the user ID, because we can't get GuildMember object if user not in guild
+    storedVariables[sandboxVariables.CURRENT_GUILD.sandboxID].bans.remove(userID,reason?reason:'undefined');
+  }));
+
 
   return initScript;
 }
