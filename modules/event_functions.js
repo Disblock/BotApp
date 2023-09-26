@@ -55,7 +55,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", we found a command to run !");
       //We will delay the answer and start the sandbox :
-      await interaction.deferReply({ ephemeral: res.rows[0].ephemeral });
+      //await interaction.deferReply({ ephemeral: res.rows[0].ephemeral });
       run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, interaction:interaction},
         database_pool, logger, res.rows);
 
