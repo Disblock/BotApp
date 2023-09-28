@@ -187,11 +187,11 @@ database_pool.query('SELECT NOW();', (err, res) => {
 
       }else{
         //Server command
-        event_functions.interactionCreate(interaction, logger, database_pool);
+        event_functions.CommandReceived(interaction, logger, database_pool);
       }
 
     }if else(interaction.isModalSubmit()){
-      //TODO
+      event_functions.formAnswered(interaction, logger, database_pool);
     }
 
   });

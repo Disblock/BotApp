@@ -34,7 +34,7 @@ async function didBotDidIt(guild, eventType){
 
 module.exports = {
 
-  interactionCreate: async(interaction, logger, database_pool)=>{
+  CommandReceived: async(interaction, logger, database_pool)=>{
     const CURRENT_GUILD = interaction.guild;//We save here the guild we're working on
 
     logger.debug("Custom slash command "+interaction.commandName+" ran in server "+interaction.guild.id);
@@ -63,6 +63,10 @@ module.exports = {
     .catch(err =>{//Got an error while getting data from database or while executing code
       //handleError(CURRENT_GUILD.id, eventType, err);
     });
+  },
+
+  formAnswered: async(interaction, logger, database_pool)=>{
+//TODU
   },
 
   messageCreate: async(eventMessage, logger, database_pool)=>{
