@@ -55,7 +55,7 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", we found a command to run !");
       //We will delay the answer and start the sandbox :
-      //await interaction.deferReply({ ephemeral: res.rows[0].ephemeral });
+      //await interaction.deferReply({ ephemeral: res.rows[0].ephemeral }); //Cancelled as it conflict with forms
       run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, interaction:interaction},
         database_pool, logger, res.rows);
 
@@ -66,7 +66,22 @@ module.exports = {
   },
 
   formAnswered: async(interaction, logger, database_pool)=>{
-//TODU
+
+    logger.debug("Form "+interaction.customId+" received from server "+interaction.guild.id);
+
+    database_pool//Query to database to get code to execute
+    .query("SELECT code FROM forms WHERE form_id = $1 LIMIT 1;", [interaction.customId])
+    .then(async (res)=>{
+
+      //Only one row due to LIMIT 1, so we can add it easily :
+      res.rows[0].code = res.rows[0].code+"await interaction.reply({ content: 'Your submission was received successfully!' });";//This line is required, as it tells Discord that we finished to handle the form correctly
+
+      run_code_in_sandbox({CURRENT_GUILD:interaction.guild, Discord:Discord, interaction:interaction},
+        database_pool, logger, res.rows);
+    })
+    .catch(err =>{//Got an error while getting data from database or while executing code
+      //handleError(CURRENT_GUILD.id, eventType, err);
+    });
   },
 
   messageCreate: async(eventMessage, logger, database_pool)=>{

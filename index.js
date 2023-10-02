@@ -190,7 +190,7 @@ database_pool.query('SELECT NOW();', (err, res) => {
         event_functions.CommandReceived(interaction, logger, database_pool);
       }
 
-    }if else(interaction.isModalSubmit()){
+    }else if(interaction.isModalSubmit()){
       event_functions.formAnswered(interaction, logger, database_pool);
     }
 
