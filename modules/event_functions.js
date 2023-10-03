@@ -40,7 +40,7 @@ module.exports = {
     logger.debug("Custom slash command "+interaction.commandName+" ran in server "+interaction.guild.id);
 
     database_pool//Query to database to get code to execute
-    .query("SELECT code, ephemeral FROM commands WHERE server_id = $1 AND name = $2 AND active = TRUE LIMIT 1;", [CURRENT_GUILD.id, interaction.commandName])
+    .query("SELECT code, ephemeral, EXISTS(SELECT form_id FROM forms WHERE forms.command_id=commands.command_id) AS formcommand FROM commands WHERE server_id = $1 AND name = $2 AND active = TRUE LIMIT 1;", [CURRENT_GUILD.id, interaction.commandName])
     .then(async (res)=>{
 
       if(res.rows.length!==1){
@@ -55,7 +55,8 @@ module.exports = {
 
       logger.debug("Got SQL result for "+CURRENT_GUILD.id+", we found a command to run !");
       //We will delay the answer and start the sandbox :
-      //await interaction.deferReply({ ephemeral: res.rows[0].ephemeral }); //Cancelled as it conflict with forms
+      if(! res.rows[0].formcommand) await interaction.deferReply({ ephemeral: res.rows[0].ephemeral }); //Not a form command. It conflict with forms, so we don't call that if the command contains one.
+
       run_code_in_sandbox({CURRENT_GUILD:CURRENT_GUILD, Discord:Discord, interaction:interaction},
         database_pool, logger, res.rows);
 
@@ -74,7 +75,7 @@ module.exports = {
     .then(async (res)=>{
 
       //Only one row due to LIMIT 1, so we can add it easily :
-      res.rows[0].code = res.rows[0].code+"await interaction.reply({ content: 'Your submission was received successfully!' });";//This line is required, as it tells Discord that we finished to handle the form correctly
+      res.rows[0].code = res.rows[0].code+"await interaction.reply({ content: 'Your submission was received successfully!', ephemeral:true });";//This line is required, as it tells Discord that we finished to handle the form correctly
 
       run_code_in_sandbox({CURRENT_GUILD:interaction.guild, Discord:Discord, interaction:interaction},
         database_pool, logger, res.rows);
