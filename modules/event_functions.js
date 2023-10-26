@@ -77,6 +77,8 @@ module.exports = {
       //Only one row due to LIMIT 1, so we can add it easily :
       res.rows[0].code = res.rows[0].code+"await interaction.reply({ content: 'Your submission was received successfully!', ephemeral:true });";//This line is required, as it tells Discord that we finished to handle the form correctly
 
+      logger.debug("Got SQL result for "+CURRENT_GUILD.id+", we found a form to display !");
+
       run_code_in_sandbox({CURRENT_GUILD:interaction.guild, Discord:Discord, interaction:interaction},
         database_pool, logger, res.rows);
     })
