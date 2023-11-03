@@ -166,30 +166,33 @@ database_pool.query('SELECT NOW();', (err, res) => {
   });
 
   discordClient.on("interactionCreate", async(interaction) => {//See https://discordjs.guide/creating-your-bot/command-handling.html#executing-commands
-    if (!interaction.isChatInputCommand()) return;//Do nothing here if not a chat command
-    const command = interaction.client.commands.get(interaction.commandName);
+    if (interaction.isChatInputCommand()){//Chat command
+      const command = interaction.client.commands.get(interaction.commandName);
 
-    if(command){
-      //That's a global command for Disblock
-      if(interaction.commandName === slashCommandReload.command.name){//Commands that need special args are managed here
-        //Reload commands for a guild
-        command.execute(interaction, database_pool, logger)
-        .catch((err)=>{
-          logger.error("Error while executing global command "+interaction.commandName+" : "+err);
-        });
+      if(command){
+        //That's a global command for Disblock
+        if(interaction.commandName === slashCommandReload.command.name){//Commands that need special args are managed here
+          //Reload commands for a guild
+          command.execute(interaction, database_pool, logger)
+          .catch((err)=>{
+            logger.error("Error while executing global command "+interaction.commandName+" : "+err);
+          });
+        }else{
+          //Classic commands, no special args needed
+          command.execute(interaction)
+          .catch((err)=>{
+            logger.error("Error while executing global command "+interaction.commandName+" : "+err);
+          });
+        }
+
       }else{
-        //Classic commands, no special args needed
-        command.execute(interaction)
-        .catch((err)=>{
-          logger.error("Error while executing global command "+interaction.commandName+" : "+err);
-        });
+        //Server command
+        event_functions.CommandReceived(interaction, logger, database_pool);
       }
 
-    }else{
-      //Server command
-      event_functions.interactionCreate(interaction, logger, database_pool);
+    }else if(interaction.isModalSubmit()){
+      event_functions.formAnswered(interaction, logger, database_pool);
     }
-
 
   });
 
