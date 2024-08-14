@@ -90,7 +90,7 @@ module.exports = {
   messageCreate: async(eventMessage, logger, database_pool)=>{
     const eventType = "event_message_sent";
 
-    if(eventMessage.author.bot || eventMessage.channel.type === Discord.ChannelType.DM){return;}//Do nothing if a bot sent the message or sent in DM
+    if(eventMessage.author === eventMessage.client.user || eventMessage.channel.type === Discord.ChannelType.DM){return;}//Do nothing if a Disblock sent the message or sent in DM
 
     if(eventMessage.mentions.has(eventMessage.client.user, {ignoreRoles:true, ignoreRepliedUser:true, ignoreEveryone:true})){
       //The help command. We just send an help message and return.
